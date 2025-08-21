@@ -8,3 +8,13 @@
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
+
+# Docker
+/.docker/.env.docker.dev
+/.docker/.env.docker.prod
+/.docker/php.ini
+
+# IDE / OS
+.idea
+.vscode
+.DS_Store

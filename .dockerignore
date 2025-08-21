@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules
+var/cache/*
+var/log/*
+docker-compose.override.yml
+
+# Fichiers inutiles pour l'image
+.idea
+.vscode
+.DS_Store
