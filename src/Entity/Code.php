@@ -33,6 +33,10 @@ class Code
     #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'code')]
     private Collection $tickets;
 
+    #[ORM\OneToOne(inversedBy: 'code', cascade: ['persist', 'remove'])]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Gain $gain = null;
+
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
@@ -117,6 +121,18 @@ class Code
                 $ticket->setCode(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getGain(): ?Gain
+    {
+        return $this->gain;
+    }
+
+    public function setGain(Gain $gain): static
+    {
+        $this->gain = $gain;
 
         return $this;
     }

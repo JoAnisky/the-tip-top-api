@@ -32,6 +32,9 @@ class Gain
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $claimDate = null;
 
+    #[ORM\OneToOne(mappedBy: 'gain', cascade: ['persist', 'remove'])]
+    private ?Code $code = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -105,6 +108,23 @@ class Gain
     public function setClaimDate(?\DateTimeImmutable $claimDate): static
     {
         $this->claimDate = $claimDate;
+
+        return $this;
+    }
+
+    public function getCode(): ?Code
+    {
+        return $this->code;
+    }
+
+    public function setCode(Code $code): static
+    {
+        // set the owning side of the relation if necessary
+        if ($code->getGain() !== $this) {
+            $code->setGain($this);
+        }
+
+        $this->code = $code;
 
         return $this;
     }
