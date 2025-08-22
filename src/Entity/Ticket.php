@@ -25,6 +25,13 @@ class Ticket
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     private ?User $user = null;
 
+    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    #[ORM\JoinColumn(nullable: false)]
+    private ?Store $store = null;
+
+    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    private ?Code $code = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -62,6 +69,30 @@ class Ticket
     public function setUser(?User $user): static
     {
         $this->user = $user;
+
+        return $this;
+    }
+
+    public function getStore(): ?Store
+    {
+        return $this->store;
+    }
+
+    public function setStore(?Store $store): static
+    {
+        $this->store = $store;
+
+        return $this;
+    }
+
+    public function getCode(): ?Code
+    {
+        return $this->code;
+    }
+
+    public function setCode(?Code $code): static
+    {
+        $this->code = $code;
 
         return $this;
     }
