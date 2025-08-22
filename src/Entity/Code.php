@@ -18,8 +18,6 @@ class Code
     #[ORM\Column]
     private ?bool $isUsed = null;
 
-    #[ORM\Column]
-    private ?bool $hasTicket = null;
 
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $usedOn = null;
@@ -55,18 +53,6 @@ class Code
     public function setIsUsed(bool $isUsed): static
     {
         $this->isUsed = $isUsed;
-
-        return $this;
-    }
-
-    public function hasTicket(): ?bool
-    {
-        return $this->hasTicket;
-    }
-
-    public function setHasTicket(bool $hasTicket): static
-    {
-        $this->hasTicket = $hasTicket;
 
         return $this;
     }
