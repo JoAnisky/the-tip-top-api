@@ -19,6 +19,9 @@ class SocialAccount
     #[ORM\Column]
     private ?int $providerId = null;
 
+    #[ORM\ManyToOne(inversedBy: 'socialAccounts')]
+    private ?User $user = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -44,6 +47,18 @@ class SocialAccount
     public function setProviderId(int $providerId): static
     {
         $this->providerId = $providerId;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

@@ -22,6 +22,9 @@ class Ticket
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2)]
     private ?string $receiptAmount = null;
 
+    #[ORM\ManyToOne(inversedBy: 'tickets')]
+    private ?User $user = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -47,6 +50,18 @@ class Ticket
     public function setReceiptAmount(string $receiptAmount): static
     {
         $this->receiptAmount = $receiptAmount;
+
+        return $this;
+    }
+
+    public function getUser(): ?User
+    {
+        return $this->user;
+    }
+
+    public function setUser(?User $user): static
+    {
+        $this->user = $user;
 
         return $this;
     }

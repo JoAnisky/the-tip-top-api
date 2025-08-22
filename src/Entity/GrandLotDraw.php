@@ -19,6 +19,10 @@ class GrandLotDraw
     #[ORM\Column(length: 255)]
     private ?string $label = null;
 
+    #[ORM\OneToOne(inversedBy: 'grandLotDraw')]
+    #[ORM\JoinColumn(nullable: true)]
+    private ?User $winner = null;
+
     public function getId(): ?int
     {
         return $this->id;
@@ -44,6 +48,18 @@ class GrandLotDraw
     public function setLabel(string $label): static
     {
         $this->label = $label;
+
+        return $this;
+    }
+
+    public function getWinner(): ?User
+    {
+        return $this->winner;
+    }
+
+    public function setWinner(?User $winner): static
+    {
+        $this->winner = $winner;
 
         return $this;
     }

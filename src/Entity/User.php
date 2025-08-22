@@ -5,6 +5,8 @@ namespace App\Entity;
 use ApiPlatform\Metadata\ApiResource;
 use App\Enum\Gender;
 use App\Repository\UserRepository;
+use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Validator\Constraints as Assert;
 
@@ -50,6 +52,30 @@ class User
 
     #[ORM\Column]
     private ?\DateTimeImmutable $registeredIn = null;
+
+    #[ORM\OneToOne(mappedBy: 'winner')]
+    private ?GrandLotDraw $grandLotDraw = null;
+
+    /**
+     * @var Collection<int, Ticket>
+     */
+    #[ORM\OneToMany(targetEntity: Ticket::class, mappedBy: 'user')]
+    private Collection $tickets;
+
+    /**
+     * @var Collection<int, SocialAccount>
+     */
+    #[ORM\OneToMany(targetEntity: SocialAccount::class, mappedBy: 'user')]
+    private Collection $socialAccounts;
+
+    #[ORM\OneToOne(inversedBy: 'user', cascade: ['persist'])]
+    private ?GrandLotParticipation $grandLotParticipation = null;
+
+    public function __construct()
+    {
+        $this->tickets = new ArrayCollection();
+        $this->socialAccounts = new ArrayCollection();
+    }
 
     public function getId(): ?int
     {
@@ -184,6 +210,78 @@ class User
     public function setRegisteredIn(\DateTimeImmutable $registeredIn): static
     {
         $this->registeredIn = $registeredIn;
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, Ticket>
+     */
+    public function getTickets(): Collection
+    {
+        return $this->tickets;
+    }
+
+    public function addTicket(Ticket $ticket): static
+    {
+        if (!$this->tickets->contains($ticket)) {
+            $this->tickets->add($ticket);
+            $ticket->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeTicket(Ticket $ticket): static
+    {
+        if ($this->tickets->removeElement($ticket)) {
+            // set the owning side to null (unless already changed)
+            if ($ticket->getUser() === $this) {
+                $ticket->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    /**
+     * @return Collection<int, SocialAccount>
+     */
+    public function getSocialAccounts(): Collection
+    {
+        return $this->socialAccounts;
+    }
+
+    public function addSocialAccount(SocialAccount $socialAccount): static
+    {
+        if (!$this->socialAccounts->contains($socialAccount)) {
+            $this->socialAccounts->add($socialAccount);
+            $socialAccount->setUser($this);
+        }
+
+        return $this;
+    }
+
+    public function removeSocialAccount(SocialAccount $socialAccount): static
+    {
+        if ($this->socialAccounts->removeElement($socialAccount)) {
+            // set the owning side to null (unless already changed)
+            if ($socialAccount->getUser() === $this) {
+                $socialAccount->setUser(null);
+            }
+        }
+
+        return $this;
+    }
+
+    public function getGrandLotParticipation(): ?GrandLotParticipation
+    {
+        return $this->grandLotParticipation;
+    }
+
+    public function setGrandLotParticipation(?GrandLotParticipation $grandLotParticipation): static
+    {
+        $this->grandLotParticipation = $grandLotParticipation;
 
         return $this;
     }
