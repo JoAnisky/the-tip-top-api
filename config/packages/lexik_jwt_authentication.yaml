@@ -3,3 +3,8 @@ lexik_jwt_authentication:
     public_key: '%kernel.project_dir%/config/jwt/public.pem'
     pass_phrase: '%env(JWT_PASSPHRASE)%'
     token_ttl: 3600 # durée de validité du token (1h)
+
+    api_platform:
+        check_path: /api/login_check
+        username_path: email
+        password_path: security.credentials.password
