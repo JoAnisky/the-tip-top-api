@@ -1,4 +1,7 @@
 security:
+    role_hierarchy:
+        ROLE_EMPLOYEE: [ ROLE_USER ]
+        ROLE_ADMIN: [ ROLE_EMPLOYEE ]
     # https://symfony.com/doc/current/security.html#registering-the-user-hashing-passwords
     password_hashers:
         Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface: 'auto'
@@ -33,9 +36,15 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        - { path: ^/api/register, roles: PUBLIC_ACCESS }
-        - { path: ^/api/login, roles: PUBLIC_ACCESS }
-        - { path: ^/api, roles: ROLE_USER }
+        # Les utilisateurs connectés peuvent voir leurs propres infos
+        - { path: ^/api/profile, roles: ROLE_USER }
+
+        # Seuls les employés et les admins peuvent gérer les utilisateurs
+        - { path: ^/api/users, roles: ROLE_EMPLOYEE }
+        - { path: ^/api/gains, roles: ROLE_EMPLOYEE }
+
+        # L'admin a accès aux statistiques
+        - { path: ^/api/stats, roles: ROLE_ADMIN }
 
 when@test:
     security:

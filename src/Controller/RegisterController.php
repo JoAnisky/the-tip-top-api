@@ -34,11 +34,7 @@ final class RegisterController extends AbstractController
         $hashedPassword = $passwordHasher->hashPassword($user, $data['password']);
         $user->setPassword($hashedPassword);
 
-        if(!empty($data['isAdmin']) && $data['isAdmin'] === true){
-            $user->setRoles(['ROLE_ADMIN']);
-        } else {
-            $user->setRoles(['ROLE_USER']);
-        }
+        $user->setRoles(['ROLE_USER']);
 
         try {
             $entityManager->persist($user);

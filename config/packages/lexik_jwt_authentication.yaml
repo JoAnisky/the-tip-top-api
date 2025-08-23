@@ -5,6 +5,6 @@ lexik_jwt_authentication:
     token_ttl: 3600 # durée de validité du token (1h)
 
     api_platform:
-        check_path: /api/login_check
+        check_path: /api/login
         username_path: email
         password_path: security.credentials.password
