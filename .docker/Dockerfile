@@ -52,15 +52,25 @@ RUN composer install --no-dev --prefer-dist --no-scripts --no-progress --no-sugg
 # ============================
 FROM deps AS dev
 
+# Installer Xdebug et ses dépendances
+RUN pecl install xdebug-3.3.1 \
+    && docker-php-ext-enable xdebug
+
+# Configurer Xdebug pour le débogage à distance
+RUN echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
+    && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+
 # Créer user dev
 RUN adduser --uid 1000 --disabled-password --gecos "" dev
 USER dev
 
-# Copier tout le projet
+# Copier tout le projet avec les bons droits
 COPY --chown=1000:1000 . .
 
-# Installer les dépendances dev
-RUN composer install --prefer-dist --no-scripts --no-progress --no-suggest
+# Installer les dépendances dev (optionnel, mieux vaut lancer la commande manuellement pour ne pas le faire a chaque rebuild)
+# RUN composer install --prefer-dist --no-scripts --no-progress --no-suggest --no-interaction
 
 # ============================
 # 4. Prod (user www-data, packages dev exclus)

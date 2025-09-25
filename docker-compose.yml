@@ -1,26 +1,25 @@
 services:
-  app:
+   app:
     build:
-      context: .
-      dockerfile: .docker/Dockerfile
-      target: ${APP_ENV}
-    container_name: ${PROJECT_NAME}
+        context: .
+        dockerfile: .docker/Dockerfile
+        target: ${APP_ENV:-dev}
+    container_name: symfony-app
     environment:
-      APP_ENV: ${APP_ENV}
-      APP_DEBUG: ${APP_DEBUG}
-      DOMAIN: ${DOMAIN}
+        APP_ENV: ${APP_ENV:-dev}
+        APP_DEBUG: ${APP_DEBUG:-1}
+        DOMAIN: ${DOMAIN:-localhost}
     volumes:
-    - ./:/var/www/html${VOLUME_OPTION}
-    # utilise la variable APP_ENV pour charger le bon fichier de config Traefik (dev/prod)
-    - ./traefik/config/traefik.${APP_ENV}.yml:/etc/traefik/traefik.yml:ro
+        - "./traefik/config/traefik.${APP_ENV:-dev}.yml:/etc/traefik/traefik.yml:ro"
     networks:
-      - web
-      - mysql_network
+        - web
+        - mysql_network
     labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.${PROJECT_NAME}.rule=Host(`${DOMAIN}`)"
+        - "traefik.enable=true"
+        - "traefik.http.routers.app.rule=Host(`${DOMAIN:-localhost}`)"
+
 networks:
-  web:
-    external: true
-  mysql_network:
-    external: true
+    web:
+        external: true
+    mysql_network:
+        external: true
