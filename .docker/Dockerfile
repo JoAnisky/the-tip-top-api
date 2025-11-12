@@ -80,6 +80,10 @@ FROM deps AS prod
 # Copier tout le projet
 COPY --chown=www-data:www-data . .
 
+# Préparer les répertoires nécessaires
+RUN mkdir -p var/cache var/log config/jwt \
+    && chown -R www-data:www-data var config/jwt \
+
 # Installer les packages prod + cache Symfony
 RUN composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
     && php bin/console cache:clear --env=prod --no-warmup \
