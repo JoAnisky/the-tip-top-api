@@ -1,0 +1,23 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: symfony-api
+    namespace: the-tip-top-api
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: symfony-api
+    template:
+        metadata:
+            labels:
+                app: symfony-api
+        spec:
+            containers:
+                - name: app
+                  image: joanisky/the-tip-top-api:latest
+                  ports:
+                      - containerPort: 80
+                  envFrom:
+                      - secretRef:
+                            name: symfony-env

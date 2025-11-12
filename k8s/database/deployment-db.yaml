@@ -1,0 +1,41 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mariadb
+    namespace: the-tip-top-api
+spec:
+    selector:
+        matchLabels:
+            app: mariadb
+    template:
+        metadata:
+            labels:
+                app: mariadb
+        spec:
+            containers:
+                - name: mariadb
+                  image: mariadb:11
+                  env:
+                      - name: MYSQL_ROOT_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mariadb-secret
+                                key: root-password
+                      - name: MYSQL_DATABASE
+                        value: the_tip_top
+                      - name: MYSQL_USER
+                        value: api_user
+                      - name: MYSQL_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mariadb-secret
+                                key: user-password
+                  ports:
+                      - containerPort: 3306
+                  volumeMounts:
+                      - name: mariadb-storage
+                        mountPath: /var/lib/mysql
+            volumes:
+                - name: mariadb-storage
+                  persistentVolumeClaim:
+                      claimName: mariadb-pvc

@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: phpmyadmin-ingress
+    namespace: the-tip-top-api
+    annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+    rules:
+        - host: pma.the-tip-top.jonathanlore.fr
+          http:
+              paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                        service:
+                            name: phpmyadmin
+                            port:
+                                number: 80

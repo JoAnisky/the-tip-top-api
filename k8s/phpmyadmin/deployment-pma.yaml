@@ -1,0 +1,29 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: phpmyadmin
+    namespace: the-tip-top-api
+spec:
+    selector:
+        matchLabels:
+            app: phpmyadmin
+    template:
+        metadata:
+            labels:
+                app: phpmyadmin
+        spec:
+            containers:
+                - name: phpmyadmin
+                  image: phpmyadmin:5
+                  env:
+                      - name: PMA_HOST
+                        value: mariadb
+                      - name: PMA_USER
+                        value: root
+                      - name: PMA_PASSWORD
+                        valueFrom:
+                            secretKeyRef:
+                                name: mariadb-secret
+                                key: root-password
+                  ports:
+                      - containerPort: 80

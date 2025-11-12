@@ -1,0 +1,19 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+    name: api-ingress
+    namespace: the-tip-top-api
+    annotations:
+        traefik.ingress.kubernetes.io/router.entrypoints: web
+spec:
+    rules:
+        - host: api.the-tip-top.jonathanlore.fr
+          http:
+              paths:
+                  - path: /
+                    pathType: Prefix
+                    backend:
+                        service:
+                            name: symfony-api
+                            port:
+                                number: 80
