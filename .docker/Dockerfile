@@ -80,7 +80,7 @@ FROM deps AS prod
 # Copier tout le projet
 COPY --chown=www-data:www-data . .
 
-# Préparer les répertoires nécessaires
+# Préparer les répertoires nécessaires cache/log et JWT
 RUN mkdir -p var/cache var/log config/jwt \
     && chown -R www-data:www-data var config/jwt \
 
