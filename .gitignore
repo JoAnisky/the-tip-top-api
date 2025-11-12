@@ -12,7 +12,6 @@
 # Docker
 /.docker/.env.docker.dev
 /.docker/.env.docker.prod
-/.docker/php.ini
 
 # IDE / OS
 .idea
