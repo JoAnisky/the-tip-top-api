@@ -55,16 +55,13 @@ pipeline {
                             echo "** Applying Kubernetes manifests **"
                             kubectl apply -k k8s/
 
-                            echo "** Waiting for deployment **"
-                            kubectl rollout status deployment/symfony-api -n ${KUBE_NAMESPACE} --timeout=300s
+                            echo "** Updating API image **"
+                            kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
 
-                            echo "** Running database migrations **"
-                            kubectl exec deployment/symfony-api -n ${KUBE_NAMESPACE} -- \
-                                php bin/console doctrine:database:create --if-not-exists --env=prod
-                            kubectl exec deployment/symfony-api -n ${KUBE_NAMESPACE} -- \
-                                php bin/console doctrine:migrations:migrate --no-interaction --env=prod
+                            echo "** Waiting for rollout **"
+                            kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
 
-                            echo "Deployment completed!"
+                            echo "✅ Deployment completed!"
                         '''
                     }
                 }
