@@ -1,0 +1,8 @@
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+    name: pma-auth
+    namespace: the-tip-top-api
+spec:
+    basicAuth:
+        secret: pma-basic-auth
