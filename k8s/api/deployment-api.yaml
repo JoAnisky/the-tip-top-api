@@ -13,45 +13,6 @@ spec:
             labels:
                 app: symfony-api
         spec:
-            initContainers:
-                - name: wait-for-db
-                  image: busybox:latest
-                  command:
-                      - /bin/sh
-                      - -c
-                      - |
-                          echo "Waiting for MariaDB on mariadb:3306..."
-                          until nc -z mariadb 3306; do
-                            echo "MariaDB is unavailable - sleeping"
-                            sleep 2
-                          done
-                          echo "MariaDB is up!"
-
-                - name: db-migrate
-                  image: joanisky/the-tip-top-api:latest
-                  command:
-                      - /bin/sh
-                      - -c
-                      - |
-                          set -e
-                          echo "=== Creating database if not exists ==="
-                          php bin/console doctrine:database:create --if-not-exists --env=prod
-
-                          echo "=== Running migrations ==="
-                          php bin/console doctrine:migrations:migrate --no-interaction --env=prod
-
-                          echo "=== Database setup completed ==="
-                  envFrom:
-                      - secretRef:
-                            name: symfony-env
-                  resources:
-                      requests:
-                          memory: "256Mi"
-                          cpu: "250m"
-                      limits:
-                          memory: "512Mi"
-                          cpu: "500m"
-
             containers:
                 - name: app
                   image: joanisky/the-tip-top-api:latest
@@ -60,28 +21,3 @@ spec:
                   envFrom:
                       - secretRef:
                             name: symfony-env
-                  readinessProbe:
-                      httpGet:
-                          path: /api
-                          port: 80
-                      initialDelaySeconds: 5
-                      periodSeconds: 5
-                      timeoutSeconds: 3
-                      failureThreshold: 3
-
-                  livenessProbe:
-                      httpGet:
-                          path: /api
-                          port: 80
-                      initialDelaySeconds: 30
-                      periodSeconds: 10
-                      timeoutSeconds: 3
-                      failureThreshold: 3
-
-                  resources:
-                      requests:
-                          memory: "256Mi"
-                          cpu: "250m"
-                      limits:
-                          memory: "512Mi"
-                          cpu: "500m"
