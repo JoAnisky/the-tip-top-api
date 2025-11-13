@@ -81,11 +81,12 @@ FROM deps AS prod
 COPY --chown=www-data:www-data . .
 
 # Préparer les répertoires nécessaires cache/log et JWT
-# + Installer les packages prod + cache Symfony
 RUN mkdir -p var/cache var/log config/jwt \
-    && chown -R www-data:www-data var config/jwt \
-    && composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
-    && php bin/console cache:clear --env=prod --no-warmup \
-    && php bin/console cache:warmup
+    && chown -R www-data:www-data var config/jwt
+
+# Installer les packages prod + clear cache Symfony
+#RUN composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
+#    && php bin/console cache:clear --env=prod --no-warmup \
+#    && php bin/console cache:warmup
 
 USER www-data
