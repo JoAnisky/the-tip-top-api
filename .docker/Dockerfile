@@ -82,15 +82,21 @@ ARG APP_SECRET=dummysecret
 ENV APP_ENV=${APP_ENV}
 ENV APP_SECRET=${APP_SECRET}
 
+WORKDIR /var/www/html
+
+# Copier les dépendances installées
 COPY --from=deps /var/www/html/vendor /var/www/html/vendor
 COPY --chown=www-data:www-data . .
 
-RUN mkdir -p var/cache var/log config/jwt \
-    && chown -R www-data:www-data var config/jwt \
-    && composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
-    && php bin/console assets:install --no-interaction --no-debug \
+# Préparer les répertoires nécessaires
+RUN mkdir -p var/cache var/log config/jwt public/bundles \
+    && chown -R www-data:www-data var config/jwt public/bundles
+
+# Installer les dépendances et générer les assets
+RUN composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
+    && php bin/console assets:install --no-interaction --no-debug --env=${APP_ENV} \
     && php bin/console cache:clear --env=${APP_ENV} --no-warmup || true \
-    && php bin/console cache:warmup || true \
+    && php bin/console cache:warmup --env=${APP_ENV} || true \
     && chown -R www-data:www-data /var/www/html
 
 USER www-data
