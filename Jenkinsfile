@@ -55,7 +55,7 @@ pipeline {
                             echo "** Running database migrations **"
                             # Créer un job unique avec un timestamp
                             JOB_NAME="symfony-db-migrate-$(date +%s)"
-                            sed "s/symfony-db-migrate/$JOB_NAME/g" k8s/job-migrations.yaml | kubectl apply -f -
+                            sed "s/symfony-db-migrate/$JOB_NAME/g" k8s/api/job-migrations.yaml | kubectl apply -f -
 
                             # Attendre que le job se complète
                             kubectl wait --for=condition=complete job/$JOB_NAME -n ${KUBE_NAMESPACE} --timeout=600s
