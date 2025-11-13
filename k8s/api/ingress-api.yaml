@@ -4,8 +4,14 @@ metadata:
     name: api-ingress
     namespace: the-tip-top-api
     annotations:
-        traefik.ingress.kubernetes.io/router.entrypoints: web
+        traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
+        traefik.ingress.kubernetes.io/router.tls: "true"
+        traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
 spec:
+    tls:
+        - hosts:
+              - api.the-tip-top.jonathanlore.fr
+          secretName: api-the-tip-top-tls
     rules:
         - host: api.the-tip-top.jonathanlore.fr
           http:
