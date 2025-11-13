@@ -10,6 +10,7 @@ services:
         APP_DEBUG: ${APP_DEBUG:-1}
         DOMAIN: ${DOMAIN:-localhost}
     volumes:
+        - "./:/var/www/html"
         - "./traefik/config/traefik.${APP_ENV:-dev}.yml:/etc/traefik/traefik.yml:ro"
     networks:
         - web
