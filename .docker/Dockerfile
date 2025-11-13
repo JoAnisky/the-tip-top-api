@@ -88,6 +88,7 @@ COPY --chown=www-data:www-data . .
 RUN mkdir -p var/cache var/log config/jwt \
     && chown -R www-data:www-data var config/jwt \
     && composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
+    && php bin/console assets:install --no-interaction --no-debug \
     && php bin/console cache:clear --env=${APP_ENV} --no-warmup || true \
     && php bin/console cache:warmup || true \
     && chown -R www-data:www-data /var/www/html
