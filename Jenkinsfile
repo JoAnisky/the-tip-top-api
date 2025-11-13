@@ -60,7 +60,9 @@ pipeline {
 
                             echo "** Running database migrations **"
                             kubectl exec deployment/symfony-api -n ${KUBE_NAMESPACE} -- \
-                                php bin/console doctrine:migrations:migrate --no-interaction --env=prod || true
+                                php bin/console doctrine:database:create --if-not-exists --env=prod
+                            kubectl exec deployment/symfony-api -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:migrations:migrate --no-interaction --env=prod
 
                             echo "Deployment completed!"
                         '''
