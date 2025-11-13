@@ -17,7 +17,7 @@ spec:
         - host: pma.the-tip-top.jonathanlore.fr
           http:
               paths:
-                  - path: /
+                  - path: /phpmyadmin
                     pathType: Prefix
                     backend:
                         service:
