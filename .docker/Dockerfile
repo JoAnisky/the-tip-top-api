@@ -77,16 +77,19 @@ COPY --chown=1000:1000 . .
 # ============================
 FROM deps AS prod
 
-# Copier tout le projet
+ARG APP_ENV=prod
+ARG APP_SECRET=dummysecret
+ENV APP_ENV=${APP_ENV}
+ENV APP_SECRET=${APP_SECRET}
+
+COPY --from=deps /var/www/html/vendor /var/www/html/vendor
 COPY --chown=www-data:www-data . .
 
-# Préparer les répertoires nécessaires cache/log et JWT
 RUN mkdir -p var/cache var/log config/jwt \
-    && chown -R www-data:www-data var config/jwt
-
-# Installer les packages prod + clear cache Symfony
-#RUN composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
-#    && php bin/console cache:clear --env=prod --no-warmup \
-#    && php bin/console cache:warmup
+    && chown -R www-data:www-data var config/jwt \
+    && composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
+    && php bin/console cache:clear --env=${APP_ENV} --no-warmup \
+    && php bin/console cache:warmup \
+    && chown -R www-data:www-data /var/www/html
 
 USER www-data

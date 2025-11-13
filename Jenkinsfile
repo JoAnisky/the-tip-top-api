@@ -23,14 +23,16 @@ pipeline {
 
         stage('Build Docker Image') {
             steps {
-                script {
-                   sh '''
-                        composer install --no-dev --optimize-autoloader --no-progress --no-suggest
-                    '''
                     withCredentials([usernamePassword(credentialsId: 'jenkins-dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')]) {
                         sh '''
                             docker login -u $DOCKER_USER -p $DOCKER_PASS
-                            docker build -f .docker/Dockerfile -t ${DOCKER_IMAGE}:${DOCKER_TAG} -t ${DOCKER_IMAGE}:${DOCKER_TAG_BUILD} .
+                            docker build \
+                                -f .docker/Dockerfile \
+                                --target prod \
+                                --build-arg APP_ENV=prod \
+                                --build-arg APP_SECRET=dummysecret \
+                                -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
+                                -t ${DOCKER_IMAGE}:${DOCKER_TAG_BUILD} .
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
                             docker push ${DOCKER_IMAGE}:${DOCKER_TAG_BUILD}
                         '''
