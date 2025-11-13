@@ -13,6 +13,28 @@ spec:
             labels:
                 app: symfony-api
         spec:
+            # Init container qui attend que le Job soit complété
+            initContainers:
+                - name: wait-for-migrations
+                  image: bitnami/kubectl:latest
+                  command:
+                      - /bin/bash
+                      - -c
+                      - |
+                          set -e
+                          echo "Waiting for migration job to complete..."
+
+                          # Attendre que le job existe
+                          until kubectl get job symfony-db-migrate -n the-tip-top-api 2>/dev/null; do
+                            echo "Job not found, waiting..."
+                            sleep 2
+                          done
+
+                          # Attendre que le job soit complété
+                          kubectl wait --for=condition=complete job/symfony-db-migrate -n the-tip-top-api --timeout=600s
+
+                          echo "Migrations job completed!"
+
             containers:
                 - name: app
                   image: joanisky/the-tip-top-api:latest
@@ -21,3 +43,18 @@ spec:
                   envFrom:
                       - secretRef:
                             name: symfony-env
+                  resources:
+                      requests:
+                          memory: "64Mi"
+                          cpu: "50m"
+                      limits:
+                          memory: "128Mi"
+                          cpu: "100m"
+                  readinessProbe:
+                      httpGet:
+                          path: /api
+                          port: 80
+                      initialDelaySeconds: 5
+                      periodSeconds: 5
+                      timeoutSeconds: 3
+                      failureThreshold: 3
