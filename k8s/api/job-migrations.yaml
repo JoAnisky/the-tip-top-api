@@ -1,7 +1,7 @@
 apiVersion: batch/v1
 kind: Job
 metadata:
-    name: symfony-db-migrate-{{ .Values.timestamp }}  # Unique à chaque exécution
+    name: symfony-db-migrate
     namespace: the-tip-top-api
 spec:
     backoffLimit: 3
