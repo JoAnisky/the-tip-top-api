@@ -7,7 +7,7 @@ metadata:
         traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-        traefik.ingress.kubernetes.io/router.middlewares: pma-auth@kubernetescrd
+        traefik.ingress.kubernetes.io/router.middlewares: pma-auth@kubernetescrd,pma-strip@kubernetescrd
 spec:
     tls:
         - hosts:
@@ -17,7 +17,7 @@ spec:
         - host: pma.the-tip-top.jonathanlore.fr
           http:
               paths:
-                  - path: /phpmyadmin
+                  - path: /
                     pathType: Prefix
                     backend:
                         service:
