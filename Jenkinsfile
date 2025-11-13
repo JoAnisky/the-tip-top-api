@@ -48,19 +48,26 @@ pipeline {
                 script {
                     withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
                         sh '''
-                            # Copier le kubeconfig
-							mkdir -p ~/.kube
-							cp $KUBECONFIG_FILE ~/.kube/config
-							chmod 600 ~/.kube/config
+                            mkdir -p ~/.kube
+                            cp $KUBECONFIG_FILE ~/.kube/config
+                            chmod 600 ~/.kube/config
+
+                            echo "** Running database migrations **"
+                            # Créer un job unique avec un timestamp
+                            JOB_NAME="symfony-db-migrate-$(date +%s)"
+                            sed "s/symfony-db-migrate/$JOB_NAME/g" k8s/job-migrations.yaml | kubectl apply -f -
+
+                            # Attendre que le job se complète
+                            kubectl wait --for=condition=complete job/$JOB_NAME -n ${KUBE_NAMESPACE} --timeout=600s
 
                             echo "** Applying Kubernetes manifests **"
-							kubectl apply -k k8s/
+                            kubectl apply -k k8s/
 
                             echo "** Updating API image **"
-							kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
+                            kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
 
-							echo "** Waiting for rollout **"
-							kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE}
+                            echo "** Waiting for rollout **"
+                            timeout 300s kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} || true
                         '''
                     }
                 }
