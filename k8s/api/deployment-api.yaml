@@ -45,12 +45,12 @@ spec:
                       - secretRef:
                             name: symfony-env
                   resources:
-                    requests:
-                        memory: "128Mi"
-                        cpu: "100m"
-                    limits:
-                        memory: "256Mi"
-                        cpu: "200m"
+                      requests:
+                          memory: "256Mi"
+                          cpu: "250m"
+                      limits:
+                          memory: "512Mi"
+                          cpu: "500m"
 
             containers:
                 - name: app
@@ -80,8 +80,8 @@ spec:
 
                   resources:
                       requests:
-                          memory: "128Mi"
-                          cpu: "100m"
-                      limits:
                           memory: "256Mi"
-                          cpu: "200"
+                          cpu: "250m"
+                      limits:
+                          memory: "512Mi"
+                          cpu: "500m"
