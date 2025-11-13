@@ -52,22 +52,17 @@ pipeline {
                             cp $KUBECONFIG_FILE ~/.kube/config
                             chmod 600 ~/.kube/config
 
-                            echo "** Running database migrations **"
-                            # Créer un job unique avec un timestamp
-                            JOB_NAME="symfony-db-migrate-$(date +%s)"
-                            sed "s/symfony-db-migrate/$JOB_NAME/g" k8s/api/job-migrations.yaml | kubectl apply -f -
-
-                            # Attendre que le job se complète
-                            kubectl wait --for=condition=complete job/$JOB_NAME -n ${KUBE_NAMESPACE} --timeout=600s
-
                             echo "** Applying Kubernetes manifests **"
                             kubectl apply -k k8s/
 
-                            echo "** Updating API image **"
-                            kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
+                            echo "** Waiting for deployment **"
+                            kubectl rollout status deployment/symfony-api -n ${KUBE_NAMESPACE} --timeout=300s
 
-                            echo "** Waiting for rollout **"
-                            timeout 300s kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} || true
+                            echo "** Running database migrations **"
+                            kubectl exec deployment/symfony-api -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:migrations:migrate --no-interaction --env=prod || true
+
+                            echo "Deployment completed!"
                         '''
                     }
                 }
