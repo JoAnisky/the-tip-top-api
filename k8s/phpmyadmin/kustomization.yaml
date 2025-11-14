@@ -6,4 +6,3 @@ resources:
     - service-pma.yaml
     - ingress-pma.yaml
     - middleware-pma-auth.yaml
-    - middleware-pma-strip.yaml
