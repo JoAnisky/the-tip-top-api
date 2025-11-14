@@ -18,12 +18,12 @@ spec:
                   env:
                       - name: PMA_HOST
                         value: mariadb
-                      - name: PMA_USER
-                        value: root
-                      - name: PMA_PASSWORD
-                        valueFrom:
-                            secretKeyRef:
-                                name: mariadb-secret
-                                key: root-password
+#                      - name: PMA_USER
+#                        value: root
+#                      - name: PMA_PASSWORD
+#                        valueFrom:
+#                            secretKeyRef:
+#                                name: mariadb-secret
+#                                key: root-password
                   ports:
                       - containerPort: 80
