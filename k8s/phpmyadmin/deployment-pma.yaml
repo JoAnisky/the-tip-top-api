@@ -31,3 +31,11 @@ spec:
 #                                key: root-password
                   ports:
                       - containerPort: 80
+                  volumeMounts:
+                      - name: pma-config
+                        mountPath: /var/www/html/config.user.inc.php
+                        subPath: config.user.inc.php
+            volumes:
+                - name: pma-config
+                  configMap:
+                      name: phpmyadmin-config
