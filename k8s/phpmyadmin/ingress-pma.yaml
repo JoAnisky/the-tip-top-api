@@ -7,7 +7,6 @@ metadata:
         traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
-        traefik.ingress.kubernetes.io/router.middlewares: the-tip-top-api-pma-auth@kubernetescrd,the-tip-top-api-pma-headers@kubernetescrd
 spec:
     tls:
         - hosts:
