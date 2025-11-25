@@ -5,4 +5,3 @@ resources:
     - deployment-pma.yaml
     - service-pma.yaml
     - ingress-pma.yaml
-    - middleware-pma-headers.yaml
