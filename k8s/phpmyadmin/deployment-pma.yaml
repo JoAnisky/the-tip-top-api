@@ -22,6 +22,8 @@ spec:
                         value: "https://pma.the-tip-top.jonathanlore.fr"
                       - name: PMA_OPTIONAL_SSL
                         value: "true"
+                      - name: APACHE_ENABLE_REQUEST_HEADER_PROXY
+                        value: "true"
 #                      - name: PMA_USER
 #                        value: root
 #                      - name: PMA_PASSWORD
