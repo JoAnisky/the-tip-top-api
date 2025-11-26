@@ -61,6 +61,9 @@ pipeline {
                             echo "** Waiting for rollout **"
                             kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
 
+                            echo "** Restarting phpMyAdmin  **"
+                            kubectl rollout restart deployment/phpmyadmin -n ${KUBE_NAMESPACE}
+
                             echo "** Creating database if not exists **"
                             kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
                                 php bin/console doctrine:database:create --if-not-exists --env=prod || true
