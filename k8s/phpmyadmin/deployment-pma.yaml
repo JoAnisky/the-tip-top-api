@@ -29,7 +29,7 @@ spec:
                       - containerPort: 80
                   volumeMounts:
                       - name: pma-config
-                        mountPath: /var/www/html/config.user.inc.php
+                        mountPath: /etc/phpmyadmin/config.user.inc.php
                         subPath: config.user.inc.php
             volumes:
                 - name: pma-config
