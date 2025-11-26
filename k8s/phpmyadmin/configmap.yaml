@@ -6,11 +6,13 @@ metadata:
 data:
     config.user.inc.php: |
         <?php
-        // Force HTTPS
-        $_SERVER['HTTPS'] = 'on';
-        $_SERVER['HTTP_SCHEME'] = 'https';
+        // Force phpMyAdmin à fonctionner en HTTPS derrière un reverse proxy
+        $cfg['ForceSSL'] = true;
+        $cfg['PmaAbsoluteUri'] = 'https://pma.the-tip-top.jonathanlore.fr/';
 
-        // Configuration des cookies - SameSite=Lax pour Chrome
-        ini_set('session.cookie_samesite', 'Lax');
-        ini_set('session.cookie_secure', '1');
-        ini_set('session.cookie_httponly', '1');
+        // Indique à phpMyAdmin que la requête vient en HTTPS même si elle arrive en HTTP dans le pod
+        $cfg['ReverseProxyHeader'] = 'HTTP_X_FORWARDED_PROTO';
+
+        // Correctifs cookies Chrome
+        $cfg['CookieSameSite'] = 'None';
+        $cfg['CookieSecure'] = true;
