@@ -21,6 +21,15 @@ spec:
                   envFrom:
                       - secretRef:
                             name: symfony-env
+                  volumeMounts:
+                      - name: jwt-private
+                        mountPath: /var/www/html/config/jwt/private.pem
+                        subPath: private.pem
+                        readOnly: true
+                      - name: jwt-public
+                        mountPath: /var/www/html/config/jwt/public.pem
+                        subPath: public.pem
+                        readOnly: true
                   resources:
                       requests:
                           memory: "64Mi"
@@ -28,3 +37,10 @@ spec:
                       limits:
                           memory: "128Mi"
                           cpu: "100m"
+            volumes:
+                - name: jwt-private
+                  secret:
+                      secretName: jwt-private-key
+                - name: jwt-public
+                  secret:
+                      secretName: jwt-public-key
