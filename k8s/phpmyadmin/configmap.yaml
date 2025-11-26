@@ -11,7 +11,7 @@ data:
         $cfg['PmaAbsoluteUri'] = 'https://pma.the-tip-top.jonathanlore.fr/';
 
         // Indique à phpMyAdmin que la requête vient en HTTPS même si elle arrive en HTTP dans le pod
-        $cfg['ReverseProxyHeader'] = 'HTTP_X_FORWARDED_PROTO';
+        $cfg['ReverseProxyHeader'] = 'X-Forwarded-Proto';
 
         // Correctifs cookies Chrome
         $cfg['CookieSameSite'] = 'None';
