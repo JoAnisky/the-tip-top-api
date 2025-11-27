@@ -6,3 +6,4 @@ resources:
     - service-pma.yaml
     - ingress-pma.yaml
     - configmap.yaml
+    - middleware-pma-https.yaml
