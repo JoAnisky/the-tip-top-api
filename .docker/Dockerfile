@@ -8,7 +8,7 @@ RUN a2enmod rewrite
 
 # Installer dépendances système + extensions PHP
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    locales git unzip libicu-dev g++ libpng-dev libxml2-dev libzip-dev libonig-dev libxslt-dev libpq-dev wget curl \
+    locales git unzip libicu-dev g++ libpng-dev libxml2-dev libzip-dev libonig-dev libxslt-dev libpq-dev wget curl bash nano \
     && echo "en_US.UTF-8 UTF-8" > /etc/locale.gen \
     && echo "fr_FR.UTF-8 UTF-8" >> /etc/locale.gen \
     && locale-gen \
@@ -82,21 +82,22 @@ ARG APP_SECRET=dummysecret
 ENV APP_ENV=${APP_ENV}
 ENV APP_SECRET=${APP_SECRET}
 
-WORKDIR /var/www/html
-
 # Copier les dépendances installées
 COPY --from=deps /var/www/html/vendor /var/www/html/vendor
 COPY --chown=www-data:www-data . .
 
 # Préparer les répertoires nécessaires
-RUN mkdir -p var/cache var/log config/jwt public/bundles \
-    && chown -R www-data:www-data var config/jwt public/bundles
+RUN mkdir -p var/cache var/log config/jwt \
+    && chown -R www-data:www-data var config/jwt
 
 # Installer les dépendances et générer les assets
 RUN composer install --no-dev --optimize-autoloader --no-progress --no-suggest \
-    && php bin/console assets:install --no-interaction --no-debug --env=${APP_ENV} \
-    && php bin/console cache:clear --env=${APP_ENV} --no-warmup || true \
-    && php bin/console cache:warmup --env=${APP_ENV} || true \
-    && chown -R www-data:www-data /var/www/html
+    && php bin/console cache:clear --env=${APP_ENV} --no-warmup || true
+
+# Installer les assets
+RUN php bin/console assets:install public --env=${APP_ENV} --no-interaction \
+    && php bin/console cache:warmup --env=${APP_ENV} || true
+
+RUN chown -R www-data:www-data /var/www/html
 
 USER www-data
