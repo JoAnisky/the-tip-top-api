@@ -1,7 +1,17 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
-    name: pma-https
+    name: pma-redirect-https
+    namespace: the-tip-top-api
+spec:
+    redirectScheme:
+        scheme: https
+        permanent: true
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+    name: pma-headers
     namespace: the-tip-top-api
 spec:
     headers:
