@@ -96,6 +96,9 @@ pipeline {
                             echo "** Updating API image **"
                             kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
 
+                            kubectl patch deployment ${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} \
+                              -p "{\"spec\":{\"template\":{\"metadata\":{\"annotations\":{\"timestamp\":\"$(date +%s)\"}}}}}"
+
                             echo "** Waiting for rollout **"
                             kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
 
