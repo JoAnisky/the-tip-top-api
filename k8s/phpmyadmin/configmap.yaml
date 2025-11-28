@@ -21,6 +21,6 @@ data:
         $cfg['Servers'][1]['ssl_ca'] = null;
 
         // Correctifs cookies Chrome
-        $cfg['CookieSameSite'] = 'Lax';
+        $cfg['CookieSameSite'] = 'None';
         $cfg['CookieSecure'] = true;
         $cfg['CookieHttpOnly'] = true;
