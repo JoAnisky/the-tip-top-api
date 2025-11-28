@@ -13,6 +13,14 @@ data:
         // phpMyAdmin doit faire confiance au reverse proxy
         $cfg['ReverseProxy'] = true;
 
+        // Configuration SSL pour la connexion à MariaDB
+        $cfg['Servers'][1]['ssl'] = true;
+        $cfg['Servers'][1]['ssl_verify'] = false;
+        $cfg['Servers'][1]['ssl_key'] = null;
+        $cfg['Servers'][1]['ssl_cert'] = null;
+        $cfg['Servers'][1]['ssl_ca'] = null;
+
         // Correctifs cookies Chrome
-        $cfg['CookieSameSite'] = 'None';
+        $cfg['CookieSameSite'] = 'Lax';
         $cfg['CookieSecure'] = true;
+        $cfg['CookieHttpOnly'] = true;
