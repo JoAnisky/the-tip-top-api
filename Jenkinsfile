@@ -48,30 +48,20 @@ pipeline {
                 script {
                     withCredentials([
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
-                        string(credentialsId: 'jwt-private-key', variable: 'JWT_PRIVATE'),
-                        string(credentialsId: 'jwt-public-key', variable: 'JWT_PUBLIC')
+                        file(credentialsId: 'jwt-private-key', variable: 'JWT_PRIVATE_FILE'),
+                        file(credentialsId: 'jwt-public-key', variable: 'JWT_PUBLIC_FILE')
                     ]) {
                         sh '''
                             mkdir -p ~/.kube
                             cp $KUBECONFIG_FILE ~/.kube/config
                             chmod 600 ~/.kube/config
 
-                            echo "** Deploying JWT Secrets **"
+                            kubectl delete secret jwt-keys -n ${KUBE_NAMESPACE} || true
 
-                            # Vérifier si les secrets existent et les supprimer
-                            kubectl delete secret jwt-private-key -n ${KUBE_NAMESPACE} 2>/dev/null || true
-                            kubectl delete secret jwt-public-key -n ${KUBE_NAMESPACE} 2>/dev/null || true
-
-                            # Créer les secrets avec les clés persistantes
-                            kubectl create secret generic jwt-private-key \
-                              --from-literal=private.pem="$JWT_PRIVATE" \
-                              -n ${KUBE_NAMESPACE}
-
-                            kubectl create secret generic jwt-public-key \
-                              --from-literal=public.pem="$JWT_PUBLIC" \
-                              -n ${KUBE_NAMESPACE}
-
-                            echo "✅ JWT Secrets deployed (persistent keys)"
+                            kubectl create secret generic jwt-keys \
+                                --from-file=private.pem=$JWT_PRIVATE_FILE \
+                                --from-file=public.pem=$JWT_PUBLIC_FILE \
+                                -n ${KUBE_NAMESPACE}
                         '''
                     }
                 }
