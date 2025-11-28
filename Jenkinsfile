@@ -88,3 +88,67 @@ pipeline {
                             chmod 600 ~/.kube/config
 
                             echo "** Applying Kubernetes manifests **"
+                            kubectl apply -k k8s/
+
+                            echo "** Updating API image **"
+                            kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
+
+                            echo "** Force new rollout **"
+                            TIMESTAMP=$(date +%s)
+                            kubectl patch deployment ${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} \
+                                -p '{"spec":{"template":{"metadata":{"annotations":{"timestamp":"'$TIMESTAMP'"}}}}}'
+
+                            echo "** Waiting for rollout **"
+                            kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
+
+                            echo "** Restarting phpMyAdmin **"
+                            kubectl rollout restart deployment/phpmyadmin -n ${KUBE_NAMESPACE}
+
+                            echo "** Database create/update **"
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:database:create --if-not-exists --env=prod || true
+
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:schema:update --force --env=prod || true
+
+                            echo "Deployment completed!"
+                        '''
+                    }
+                }
+            }
+        }
+
+        stage('Verify Deployment') {
+            when {
+                expression { env.GIT_BRANCH == 'origin/main' }
+            }
+            steps {
+                script {
+                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
+                        sh '''
+                            cp $KUBECONFIG_FILE ~/.kube/config
+
+                            echo "=== Pods ==="
+                            kubectl get pods -n ${KUBE_NAMESPACE}
+
+                            echo "=== Secrets ==="
+                            kubectl get secrets -n ${KUBE_NAMESPACE} | grep jwt
+                        '''
+                    }
+                }
+            }
+        }
+    }
+
+    post {
+        always {
+            cleanWs()
+        }
+        success {
+            echo "✅ ${APP_NAME} deployed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed"
+        }
+    }
+}
