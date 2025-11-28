@@ -13,6 +13,22 @@ spec:
             labels:
                 app: symfony-api
         spec:
+
+            initContainers:
+                - name: fix-jwt-permissions
+                  image: busybox
+                  command:
+                      - sh
+                      - -c
+                      - |
+                          echo "[Init] Fixing JWT permissions..."
+                          chmod 640 /var/www/html/config/jwt/private.pem
+                          chmod 644 /var/www/html/config/jwt/public.pem
+                          chown -R 33:33 /var/www/html/config/jwt
+                  volumeMounts:
+                      - name: jwt-keys
+                        mountPath: /var/www/html/config/jwt
+
             containers:
                 - name: app
                   image: joanisky/the-tip-top-api:latest
@@ -22,14 +38,9 @@ spec:
                       - secretRef:
                             name: symfony-env
                   volumeMounts:
-                      - name: jwt-private
-                        mountPath: /var/www/html/config/jwt/private.pem
-                        subPath: private.pem
-                        readOnly: true
-                      - name: jwt-public
-                        mountPath: /var/www/html/config/jwt/public.pem
-                        subPath: public.pem
-                        readOnly: true
+                      - name: jwt-keys
+                        mountPath: /var/www/html/config/jwt
+                        readOnly: false
                   resources:
                       requests:
                           memory: "64Mi"
@@ -37,10 +48,8 @@ spec:
                       limits:
                           memory: "128Mi"
                           cpu: "100m"
+
             volumes:
-                - name: jwt-private
+                - name: jwt-keys
                   secret:
-                      secretName: jwt-private-key
-                - name: jwt-public
-                  secret:
-                      secretName: jwt-public-key
+                      secretName: jwt-keys   # ✔️ le secret créé par Jenkins
