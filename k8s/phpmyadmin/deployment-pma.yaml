@@ -21,7 +21,9 @@ spec:
                       - name: PMA_SSL
                         value: "1"
                       - name: PMA_SSL_VERIFY
-                        value: "1"
+                        value: "0"
+                      - name: PMA_ABSOLUTE_URI
+                        value: "https://pma.the-tip-top.jonathanlore.fr/"
 #                      - name: PMA_USER
 #                        value: root
 #                      - name: PMA_PASSWORD
