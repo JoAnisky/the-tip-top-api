@@ -18,6 +18,10 @@ spec:
                   env:
                       - name: PMA_HOST
                         value: mariadb
+                      - name: PMA_SSL
+                        value: "1"
+                      - name: PMA_SSL_VERIFY
+                        value: "1"
 #                      - name: PMA_USER
 #                        value: root
 #                      - name: PMA_PASSWORD
