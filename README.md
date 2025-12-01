@@ -89,7 +89,7 @@ spec:
 **Attention VPS** : Si le cluster n'a pas de provisioner de stockage automatique, un PersistentVolume (PV) manuel pointant vers un chemin sur le disque (`/mnt/data/mariadb` par exemple) doit être créé avant d'appliquer ce PVC.
 
 ### 2. Déploiement de la stack
-
+Chaque service Kubernetes a son propre dossier. Un fichier kustomization.yaml permet de lancer les différents fichiers de chaque dossier (pod) : deployment, ingress, service...  
 Une fois les prérequis créés, lancer le déploiement complet via Kustomize :
 
 ```bash
@@ -97,13 +97,14 @@ kubectl apply -k k8s/
 ```
 
 ### 3. Vérification du Déploiement 
-Lister les ressources créées dans le namespace :
+
+Lister les ressources créées dans le namespace (the-tip-top-api)
+
 ```bash
 kubectl get pods -n the-tip-top-api
 kubectl get svc -n the-tip-top-api
 kubectl get ingress -n the-tip-top-api
 ```
-
 Pods attendus :
 - symfony-api
 - mariadb
@@ -113,6 +114,37 @@ Services attendus :
 - service-api
 - service-db
 - service-pma
+
+## Commandes utiles 
+
+Logs
+
+```bash
+kubectl logs -f deployment/symfony-api -n the-tip-top-api
+```
+
+Entrer dans le conteneur (récupérer avant l'id de conteneur)
+
+```bash
+kubectl exec -it symfony-api-684bb965d9-bddkc -n the-tip-top-api -- bash
+```
+
+Voir la config du pod (par ex pour vérifier qu'un fichier de config s'est bien appliqué)
+
+```bash
+kubectl describe pod symfony-api-684bb965d9-bddkc -n the-tip-top-api
+```
+Redémarrer le conteneur (avec rollout on peut : `restart`, `pause`, `resume`, `undo`, `history`)
+
+```bash
+kubectl rollout restart deployment/symfony-api -n the-tip-top-api
+```
+
+Vérifier la progression de la commande rollout
+
+```bash
+kubectl rollout status deployment/symfony-api -n the-tip-top-api
+```
 
 ## 🔁 Intégration CI/CD avec Jenkins
 
