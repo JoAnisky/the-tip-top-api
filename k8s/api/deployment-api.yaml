@@ -13,22 +13,6 @@ spec:
             labels:
                 app: symfony-api
         spec:
-
-            initContainers:
-                - name: fix-jwt-permissions
-                  image: busybox
-                  command:
-                      - sh
-                      - -c
-                      - |
-                          echo "[Init] Fixing JWT permissions..."
-                          chmod 640 /var/www/html/config/jwt/private.pem
-                          chmod 644 /var/www/html/config/jwt/public.pem
-                          chown -R 33:33 /var/www/html/config/jwt
-                  volumeMounts:
-                      - name: jwt-keys
-                        mountPath: /var/www/html/config/jwt
-
             containers:
                 - name: app
                   image: joanisky/the-tip-top-api:latest
@@ -40,7 +24,7 @@ spec:
                   volumeMounts:
                       - name: jwt-keys
                         mountPath: /var/www/html/config/jwt
-                        readOnly: false
+                        readOnly: true
                   resources:
                       requests:
                           memory: "64Mi"
