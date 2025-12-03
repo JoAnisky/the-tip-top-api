@@ -36,15 +36,13 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
-        # Les utilisateurs connectés peuvent voir leurs propres infos
-        - { path: ^/api/profile, roles: ROLE_USER }
-
-        # Seuls les employés et les admins peuvent gérer les utilisateurs
-        - { path: ^/api/users, roles: ROLE_EMPLOYEE }
-        - { path: ^/api/gains, roles: ROLE_EMPLOYEE }
+        # Public endpoints - pas besoin d'auth
+        - { path: ^/api/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/register$, roles: PUBLIC_ACCESS }
+        - { path: ^/api/docs, roles: PUBLIC_ACCESS }
 
         # L'admin a accès aux statistiques
-        - { path: ^/api/stats, roles: ROLE_ADMIN }
+        - { path: ^/api, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
