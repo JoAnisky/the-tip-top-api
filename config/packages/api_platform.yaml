@@ -1,7 +1,10 @@
 api_platform:
-    title: Hello API Platform
+    patch_formats:
+        json: [ 'application/merge-patch+json' ]
+    title: Hello Thé Tip Top
     version: 1.0.0
     defaults:
         stateless: true
         cache_headers:
             vary: ['Content-Type', 'Authorization', 'Origin']
+
