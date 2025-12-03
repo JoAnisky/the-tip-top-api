@@ -3,55 +3,99 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Delete;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Patch;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
 use App\Enum\Gender;
 use App\Repository\UserRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
 use Symfony\Component\Validator\Constraints as Assert;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
 use Symfony\Component\Security\Core\User\PasswordAuthenticatedUserInterface;
 use Symfony\Component\Security\Core\User\UserInterface;
 
+#[ApiResource(
+    operations: [
+        new GetCollection(
+            security: "is_granted('ROLE_EMPLOYEE')"
+        ),
+        new Post(
+            security: "is_granted('ROLE_ADMIN')",
+            validationContext: ['groups' => ['Default', 'user:create']]
+        ),
+        new Get(
+            security: "is_granted('ROLE_EMPLOYEE') or object.getId() == user.getId()"
+        ),
+        new Put(
+            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))"
+        ),
+        new Patch(
+            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))"
+        ),
+        new Delete(
+            security: "is_granted('ROLE_ADMIN')"
+        ),
+    ],
+    normalizationContext: ['groups' => ['user:read']],
+    denormalizationContext: ['groups' => ['user:create', 'user:update']],
+)]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ApiResource]
+#[UniqueEntity('email')]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
+    #[Groups(['user:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
-    #[ORM\Column]
+    #[ORM\Column(type: 'integer')]
     private ?int $id = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 255)]
     private ?string $firstName = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 255)]
     private ?string $lastName = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
 
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $birthdate = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 10, nullable: true, enumType: Gender::class)]
 //    #[Assert\Choice(callback: [Gender::class, 'cases'])]
     private ?Gender $gender = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 150, nullable: true)]
     private ?string $city = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $postalCode = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 180, nullable: true)]
     private ?string $country = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 20, nullable: true)]
     private ?string $phoneNumber = null;
 
+    #[Groups(['user:read'])]
     #[ORM\Column]
     private ?\DateTimeImmutable $registeredIn = null;
 
@@ -80,6 +124,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->tickets = new ArrayCollection();
         $this->socialAccounts = new ArrayCollection();
+        $this->registeredIn = new \DateTimeImmutable();
     }
 
     public function getId(): ?int
