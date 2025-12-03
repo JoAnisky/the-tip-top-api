@@ -11,6 +11,7 @@ use ApiPlatform\Metadata\Post;
 use ApiPlatform\Metadata\Put;
 use App\Enum\Gender;
 use App\Repository\UserRepository;
+use App\State\UserPasswordHasher;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -27,16 +28,19 @@ use Symfony\Component\Security\Core\User\UserInterface;
         ),
         new Post(
             security: "is_granted('ROLE_ADMIN')",
-            validationContext: ['groups' => ['Default', 'user:create']]
+            validationContext: ['groups' => ['Default', 'user:create']],
+            processor: UserPasswordHasher::class
         ),
         new Get(
             security: "is_granted('ROLE_EMPLOYEE') or object.getId() == user.getId()"
         ),
         new Put(
-            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))"
+            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))",
+            processor: UserPasswordHasher::class
         ),
         new Patch(
-            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))"
+            security: "is_granted('ROLE_ADMIN') or (object.getId() == user.getId() and is_granted('ROLE_USER'))",
+            processor: UserPasswordHasher::class
         ),
         new Delete(
             security: "is_granted('ROLE_ADMIN')"
@@ -56,13 +60,15 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private ?int $id = null;
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $firstName = null;
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
-    #[ORM\Column(length: 255)]
+    #[ORM\Column(length: 255, nullable: true)]
     private ?string $lastName = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Email]
     #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 180, unique: true)]
     private ?string $email = null;
@@ -70,13 +76,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(length: 255)]
     private ?string $password = null;
 
+    #[Assert\NotBlank(groups: ['user:create'])]
+    #[Assert\Length(min: 8, minMessage: 'Le mot de passe doit contenir au moins 8 caractères', groups: ['user:create', 'user:update'])]
+    #[Groups(['user:create', 'user:update'])]
+    private ?string $plainPassword = null;
+
     #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(nullable: true)]
     private ?\DateTimeImmutable $birthdate = null;
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 10, nullable: true, enumType: Gender::class)]
-//    #[Assert\Choice(callback: [Gender::class, 'cases'])]
+    #[Assert\Choice(callback: [Gender::class, 'cases'])]
     private ?Gender $gender = null;
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
@@ -179,6 +190,18 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     public function setPassword(string $password): self
     {
         $this->password = $password;
+
+        return $this;
+    }
+
+    public function getPlainPassword(): ?string
+    {
+        return $this->plainPassword;
+    }
+
+    public function setPlainPassword(?string $plainPassword): self
+    {
+        $this->plainPassword = $plainPassword;
 
         return $this;
     }
