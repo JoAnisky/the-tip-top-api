@@ -40,4 +40,13 @@ class GainRepository extends ServiceEntityRepository
 //            ->getOneOrNullResult()
 //        ;
 //    }
+    public function findActiveGains(): array
+    {
+        return $this->createQueryBuilder('g')
+            ->andWhere('g.allocatedQuantity < g.maxQuantity')
+            ->andWhere('g.allocationDate IS NULL')
+            ->orderBy('g.probability', 'DESC')
+            ->getQuery()
+            ->getResult();
+    }
 }
