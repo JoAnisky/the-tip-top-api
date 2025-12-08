@@ -6,6 +6,7 @@ use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use App\Interface\OwnerAwareInterface;
 use App\Repository\TicketRepository;
 use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
@@ -15,14 +16,14 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: TicketRepository::class)]
 #[ApiResource(
     operations: [
-        new GetCollection(security: "is_granted('ROLE_USER')"),
-        new Get(security: "is_granted('ROLE_USER')"),
+        new GetCollection(security: "is_granted('ROLE_EMPLOYEE') or is_granted('ROLE_USER')"),
+        new Get(security: "is_granted('ROLE_EMPLOYEE') or object.getUser() == user"),
         new Post(security: "is_granted('ROLE_EMPLOYEE')"),
     ],
     normalizationContext: ['groups' => ['ticket:read']],
     denormalizationContext: ['groups' => ['ticket:create']],
 )]
-class Ticket
+class Ticket implements OwnerAwareInterface
 {
     #[Groups(['ticket:read'])]
     #[ORM\Id]
@@ -51,7 +52,7 @@ class Ticket
     #[ORM\JoinColumn(nullable: false)]
     private ?Store $store = null;
 
-    #[Groups(['ticket:read'])]
+//    #[Groups(['ticket:read'])]
     #[ORM\ManyToOne(inversedBy: 'tickets')]
     private ?Code $code = null;
 
