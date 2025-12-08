@@ -3,32 +3,64 @@
 namespace App\Entity;
 
 use ApiPlatform\Metadata\ApiResource;
+use ApiPlatform\Metadata\Get;
+use ApiPlatform\Metadata\GetCollection;
+use ApiPlatform\Metadata\Post;
+use ApiPlatform\Metadata\Put;
+use ApiPlatform\Metadata\Patch;
 use App\Repository\StoreRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Serializer\Annotation\Groups;
+use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: StoreRepository::class)]
-#[ApiResource]
+#[ApiResource(
+    operations: [
+        new GetCollection(security: "is_granted('ROLE_USER')"),
+        new Get(security: "is_granted('ROLE_USER')"),
+        new Post(security: "is_granted('ROLE_ADMIN')"),
+        new Put(security: "is_granted('ROLE_ADMIN')"),
+        new Patch(security: "is_granted('ROLE_ADMIN')"),
+    ],
+    normalizationContext: ['groups' => ['store:read']],
+    denormalizationContext: ['groups' => ['store:create', 'store:update']],
+)]
 class Store
 {
+    #[Groups(['store:read'])]
     #[ORM\Id]
     #[ORM\GeneratedValue]
     #[ORM\Column]
     private ?int $id = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 255)]
+    #[Groups(['store:read', 'store:create', 'store:update'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 5, max: 255)]
+    #[Groups(['store:read', 'store:create', 'store:update'])]
     #[ORM\Column(length: 255)]
     private ?string $address = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Length(min: 2, max: 100)]
+    #[Groups(['store:read', 'store:create', 'store:update'])]
     #[ORM\Column(length: 100)]
     private ?string $city = null;
 
+    #[Assert\NotBlank]
+    #[Assert\Regex(pattern: '/^\d{5}$/')]
+    #[Groups(['store:read', 'store:create', 'store:update'])]
     #[ORM\Column(length: 20)]
     private ?string $postalCode = null;
 
+    #[Assert\Length(max: 100)]
+    #[Groups(['store:read', 'store:create', 'store:update'])]
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $storeManager = null;
 
