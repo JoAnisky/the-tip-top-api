@@ -7,6 +7,7 @@ use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Post;
+use App\Interface\OwnerAwareInterface;
 use App\Repository\SocialAccountRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Serializer\Annotation\Groups;
@@ -15,15 +16,15 @@ use Symfony\Component\Validator\Constraints as Assert;
 #[ORM\Entity(repositoryClass: SocialAccountRepository::class)]
 #[ApiResource(
     operations: [
-        new GetCollection(security: "is_granted('ROLE_ADMIN')"),
-        new Get(security: "is_granted('ROLE_ADMIN')"),
+        new GetCollection(security: "is_granted('ROLE_USER')"),
+        new Get(security: "is_granted('ROLE_USER')"),
         new Post(security: "is_granted('ROLE_USER')"),
         new Delete(security: "is_granted('ROLE_USER')"),
     ],
     normalizationContext: ['groups' => ['socialaccount:read']],
     denormalizationContext: ['groups' => ['socialaccount:create']],
 )]
-class SocialAccount
+class SocialAccount implements OwnerAwareInterface
 {
     #[Groups(['socialaccount:read'])]
     #[ORM\Id]
