@@ -51,13 +51,35 @@ class Code
     #[ORM\Column(length: 10, unique: true)]
     private ?string $code = null;
 
+    /**
+     * Le code a-t-il été validé par l'utilisateur ?
+     */
     #[Groups(['code:read'])]
     #[ORM\Column]
-    private ?bool $isUsed = null;
+    private bool $isValidated = false;
 
+    /**
+     * Date à laquelle le code a été validé (renseigné par l'utilisateur)
+     * C'est le moment où le client entre son code sur le site
+     */
     #[Groups(['code:read'])]
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $usedOn = null;
+    private ?\DateTimeImmutable $validatedOn = null;
+
+    /**
+     * Le lot a-t-il été remis physiquement au client ?
+     */
+    #[Groups(['code:read'])]
+    #[ORM\Column]
+    private bool $isClaimed = false;
+
+    /**
+     * Date à laquelle le lot a été remis au client
+     * Rempli par l'employé en magasin
+     */
+    #[Groups(['code:read'])]
+    #[ORM\Column(nullable: true)]
+    private ?\DateTimeImmutable $claimedOn = null;
 
     #[Assert\NotBlank]
     #[Groups(['code:read'])]
@@ -79,7 +101,8 @@ class Code
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
-        $this->isUsed = false;
+        $this->isValidated = false;
+        $this->isClaimed = false;
     }
 
     public function getId(): ?int
@@ -99,33 +122,60 @@ class Code
         return $this;
     }
 
-    public function isUsed(): ?bool
+    public function isValidated(): bool
     {
-        return $this->isUsed;
+        return $this->isValidated;
     }
 
     /**
-     * Marquer le code comme utilisé
-     * Seul ROLE_EMPLOYE peut faire cette action via PATCH
+     * Valider le code (quand l'utilisateur le renseigne)
      */
-    public function setIsUsed(bool $isUsed): static
+    public function setIsValidated(bool $isValidated): static
     {
-        $this->isUsed = $isUsed;
-        if ($isUsed && !$this->usedOn) {
-            $this->usedOn = new \DateTimeImmutable();
+        $this->isValidated = $isValidated;
+        if ($isValidated && !$this->validatedOn) {
+            $this->validatedOn = new \DateTimeImmutable();
         }
         return $this;
     }
 
-    public function getUsedOn(): ?\DateTimeImmutable
+    public function getValidatedOn(): ?\DateTimeImmutable
     {
-        return $this->usedOn;
+        return $this->validatedOn;
     }
 
-    public function setUsedOn(?\DateTimeImmutable $usedOn): static
+    public function setValidatedOn(?\DateTimeImmutable $validatedOn): static
     {
-        $this->usedOn = $usedOn;
+        $this->validatedOn = $validatedOn;
+        return $this;
+    }
 
+    public function isClaimed(): bool
+    {
+        return $this->isClaimed;
+    }
+
+    /**
+     * Marquer le lot comme remis (par l'employé en magasin)
+     * Seul ROLE_EMPLOYEE peut faire cette action via PATCH
+     */
+    public function setIsClaimed(bool $isClaimed): static
+    {
+        $this->isClaimed = $isClaimed;
+        if ($isClaimed && !$this->claimedOn) {
+            $this->claimedOn = new \DateTimeImmutable();
+        }
+        return $this;
+    }
+
+    public function getClaimedOn(): ?\DateTimeImmutable
+    {
+        return $this->claimedOn;
+    }
+
+    public function setClaimedOn(?\DateTimeImmutable $claimedOn): static
+    {
+        $this->claimedOn = $claimedOn;
         return $this;
     }
 

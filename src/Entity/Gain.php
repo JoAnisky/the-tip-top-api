@@ -74,13 +74,6 @@ class Gain
     private ?int $probability = null;
 
     /**
-     * Cette donnée servira à informer l'utilisateur qu'il a récupéré le lot à telle date
-     */
-    #[Groups(['gain:read', 'gain:create'])]
-    #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $allocationDate = null;
-
-    /**
      * Date limite pour réclamer le gain
      * Les joueurs auront les 30 jours du jeu concours ainsi que 30 jours supplémentaires à compter de la date de clôture du jeu pour aller
      * sur le site internet afin tester le code de leur(s) ticket(s) et réclamer leur lot en magasin ou en ligne.
@@ -170,17 +163,6 @@ class Gain
         return $this;
     }
 
-    public function getAllocationDate(): ?\DateTimeImmutable
-    {
-        return $this->allocationDate;
-    }
-
-    public function setAllocationDate(?\DateTimeImmutable $allocationDate): static
-    {
-        $this->allocationDate = $allocationDate;
-
-        return $this;
-    }
 
     public function getClaimDeadLine(): ?\DateTimeImmutable
     {
