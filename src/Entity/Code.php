@@ -95,7 +95,7 @@ class Code
     #[Assert\NotNull]
     #[Groups(['code:read'])]
     #[ORM\OneToOne(inversedBy: 'codes', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: false)]
+    #[ORM\JoinColumn(nullable: true)]
     private ?Gain $gain = null;
 
     public function __construct()
