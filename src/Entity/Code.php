@@ -55,8 +55,8 @@ class Code
      * Le code a-t-il été validé par l'utilisateur ?
      */
     #[Groups(['code:read'])]
-    #[ORM\Column]
-    private bool $isValidated = false;
+    #[ORM\Column(options: ["default" => 0])]
+    private bool $isValidated;
 
     /**
      * Date à laquelle le code a été validé (renseigné par l'utilisateur)
@@ -70,8 +70,8 @@ class Code
      * Le lot a-t-il été remis physiquement au client ?
      */
     #[Groups(['code:read'])]
-    #[ORM\Column]
-    private bool $isClaimed = false;
+    #[ORM\Column(options: ["default" => 0])]
+    private bool $isClaimed;
 
     /**
      * Date à laquelle le lot a été remis au client
