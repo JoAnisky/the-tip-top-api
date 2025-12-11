@@ -54,6 +54,7 @@ class Ticket implements OwnerAwareInterface
 
 //    #[Groups(['ticket:read'])]
     #[ORM\ManyToOne(inversedBy: 'tickets')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')] // si le code est supprimé (ce qui ne devrait jamais arriver..)
     private ?Code $code = null;
 
     public function __construct()
