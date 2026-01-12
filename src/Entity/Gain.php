@@ -45,17 +45,17 @@ class Gain
 
     #[Assert\NotBlank]
     #[Assert\Length(min: 3, max: 255)]
-    #[Groups(['gain:read', 'gain:create', 'gain:update'])]
+    #[Groups(['gain:read', 'gain:create', 'gain:update', 'code:read'])]
     #[ORM\Column(length: 255)]
     private ?string $name = null;
 
     #[Assert\Length(min: 3, max: 255)]
-    #[Groups(['gain:read', 'gain:create', 'gain:update'])]
+    #[Groups(['gain:read', 'gain:create', 'gain:update','code:read' ])]
     #[ORM\Column(length: 255, nullable: true)]
     private ?string $description = null;
 
     #[Assert\Positive]
-    #[Groups(['gain:read', 'gain:create', 'gain:update'])]
+    #[Groups(['gain:read', 'gain:create', 'gain:update', 'code:read'])]
     #[ORM\Column(type: Types::DECIMAL, precision: 10, scale: 2, nullable: true)]
     private ?string $value = null;
 

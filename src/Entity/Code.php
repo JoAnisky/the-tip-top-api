@@ -2,14 +2,17 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
-use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Dto\ClaimInput;
 use App\Dto\CodeInput;
 use App\Repository\CodeRepository;
 use App\State\CodeValidationProcessor;
+use App\State\CodeClaimProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -28,20 +31,29 @@ use Symfony\Component\Validator\Constraints as Assert;
         // Endpoint pour soumettre/valider un code
         new Post(
             uriTemplate: '/codes/validate',
+            normalizationContext: ['groups' => ['code:read']],
             denormalizationContext: ['groups' => ['code:validate']],
             security: "is_granted('ROLE_USER')",
             input: CodeInput::class,
             name: 'validate_code',
             processor: CodeValidationProcessor::class,
         ),
-        // Seul l'employé en boutique peut marquer un code comme utilisé via PATCH
-        new Patch(
+        // Seul l'employé en boutique (ou l'admin) peut marquer un code comme utilisé via PATCH
+        new Post(
+            uriTemplate: '/codes/claim',
+            normalizationContext: ['groups' => ['code:read']],
+            denormalizationContext: ['groups' => ['code:claim']],
             security: "is_granted('ROLE_EMPLOYEE')",
+            input: ClaimInput::class,
+            output: Code::class,
+            name: 'claim_code',
+            processor: CodeClaimProcessor::class,
         ),
     ],
     normalizationContext: ['groups' => ['code:read']],
     denormalizationContext: ['groups' => ['code:update']],
 )]
+#[ApiFilter(SearchFilter::class, properties: ['code' => 'exact'])]
 class Code
 {
     #[Groups(['code:read'])]
@@ -74,7 +86,7 @@ class Code
     /**
      * Le lot a-t-il été remis physiquement au client ?
      */
-    #[Groups(['code:read'])]
+    #[Groups(['code:read', 'code:update'])]
     #[ORM\Column(options: ["default" => 0])]
     private bool $isClaimed;
 
