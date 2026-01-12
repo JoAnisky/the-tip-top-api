@@ -11,11 +11,20 @@ Utilisation de Doctrine\DBAL\Connection au lieu de l'ORM (EntityManager) pour é
 
 -> __En cas de crash mémoire en prod__
 
-__Option 1__ : Réduire la RAM allouée  
+__Option 1__ : Réduire la RAM allouée
 ```php
 ini_set('memory_limit', '1024M');
 ```
 
-__Option 2__ : Réduire la taille du lot (Batch Size) 
+__Option 2__ : Réduire la taille du lot (Batch Size)
 
 `self::BATCH_SIZE = 500` peut être trop élevé pour la RAM disponible.
+
+## AllocateGainsCommand
+
+Une fois les codes générés, cette commande attribue à chaque code un lot selon les probabilités définies dans la table `gain`.
+
+### Commande :
+```bash
+php bin/console app:allocate:gains
+```
