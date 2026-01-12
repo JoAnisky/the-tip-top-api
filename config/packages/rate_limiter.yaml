@@ -1,0 +1,6 @@
+framework:
+    rate_limiter:
+        code_validation_limiter:
+            policy: 'fixed_window'
+            limit: 5
+            interval: '1 minute' # Seulement 5 essais / min par utilisateur

@@ -21,3 +21,7 @@ services:
     App\State\UserPasswordHasher:
         bind:
             $processor: '@api_platform.doctrine.orm.state.persist_processor'
+
+    App\State\CodeValidationProcessor:
+        arguments:
+            $codeValidationLimiter: '@limiter.code_validation_limiter'
