@@ -44,7 +44,6 @@ class GainRepository extends ServiceEntityRepository
     {
         return $this->createQueryBuilder('g')
             ->andWhere('g.allocatedQuantity < g.maxQuantity')
-            ->andWhere('g.allocationDate IS NULL')
             ->orderBy('g.probability', 'DESC')
             ->getQuery()
             ->getResult();
