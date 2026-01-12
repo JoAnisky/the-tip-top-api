@@ -1,23 +1,23 @@
 services:
-   app:
-    build:
-        context: .
-        dockerfile: .docker/Dockerfile
-        target: ${APP_ENV:-dev}
-    container_name: symfony-app
-    environment:
-        APP_ENV: ${APP_ENV:-dev}
-        APP_DEBUG: ${APP_DEBUG:-1}
-        DOMAIN: ${DOMAIN:-localhost}
-    volumes:
-        - "./:/var/www/html"
-        - "./traefik/config/traefik.${APP_ENV:-dev}.yml:/etc/traefik/traefik.yml:ro"
-    networks:
-        - web
-        - mysql_network
-    labels:
-        - "traefik.enable=true"
-        - "traefik.http.routers.app.rule=Host(`${DOMAIN:-localhost}`)"
+    ttt-api:
+        build:
+            context: .
+            dockerfile: .docker/Dockerfile
+            target: ${APP_ENV:-dev}
+        container_name: ttt-api
+        environment:
+            APP_ENV: ${APP_ENV:-dev}
+            APP_DEBUG: ${APP_DEBUG:-1}
+            DOMAIN: ${DOMAIN:-localhost}
+        volumes:
+            - "./:/var/www/html"
+            - "./traefik/config/traefik.${APP_ENV:-dev}.yml:/etc/traefik/traefik.yml:ro"
+        networks:
+            - web
+            - mysql_network
+        labels:
+            - "traefik.enable=true"
+            - "traefik.http.routers.ttt-api.rule=Host(`${DOMAIN:-localhost}`)"
 
 networks:
     web:
