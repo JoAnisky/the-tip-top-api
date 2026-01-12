@@ -98,6 +98,10 @@ class Code
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Gain $gain = null;
 
+    #[ORM\ManyToOne(targetEntity: User::class)]
+    #[Groups(['code:read'])]
+    private ?User $winner = null;
+
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
@@ -230,6 +234,17 @@ class Code
     {
         $this->gain = $gain;
 
+        return $this;
+    }
+
+    public function getWinner(): ?User
+    {
+        return $this->winner;
+    }
+
+    public function setWinner(?User $winner): static
+    {
+        $this->winner = $winner;
         return $this;
     }
 }
