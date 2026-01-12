@@ -56,11 +56,7 @@ FROM deps AS dev
 RUN pecl install xdebug-3.3.1 \
     && docker-php-ext-enable xdebug
 
-# Configurer Xdebug pour le débogage à distance
-RUN echo "xdebug.mode=debug" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.client_host=host.docker.internal" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.start_with_request=yes" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini \
-    && echo "xdebug.client_port=9003" >> /usr/local/etc/php/conf.d/docker-php-ext-xdebug.ini
+COPY .docker/xdebug.ini /usr/local/etc/php/conf.d/99-xdebug.ini
 
 # Créer user dev
 RUN adduser --uid 1000 --disabled-password --gecos "" dev
