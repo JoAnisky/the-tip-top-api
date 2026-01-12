@@ -94,8 +94,8 @@ class Code
 
     #[Assert\NotNull]
     #[Groups(['code:read'])]
-    #[ORM\OneToOne(inversedBy: 'codes', cascade: ['persist', 'remove'])]
-    #[ORM\JoinColumn(nullable: true)]
+    #[ORM\ManyToOne(targetEntity: Gain::class, inversedBy: 'codes')]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Gain $gain = null;
 
     public function __construct()
@@ -226,7 +226,7 @@ class Code
         return $this->gain;
     }
 
-    public function setGain(Gain $gain): static
+    public function setGain(?Gain $gain): static
     {
         $this->gain = $gain;
 

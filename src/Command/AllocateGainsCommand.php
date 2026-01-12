@@ -2,10 +2,8 @@
 
 namespace App\Command;
 
-use App\Repository\CodeRepository;
-use App\Service\CodeAllocationService;
-use Doctrine\ORM\EntityManagerInterface;
-use Random\RandomException;
+use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
@@ -15,21 +13,18 @@ use Symfony\Component\Stopwatch\Stopwatch;
 
 #[AsCommand(
     name: 'app:allocate:gains',
-    description: 'Attribue un gain à chaque code généré selon les probabilités.',
+    description: 'Attribue les gains massivement via DBAL (très rapide)',
 )]
 class AllocateGainsCommand extends Command
 {
-    private const BATCH_SIZE = 100; // Plus petit que DBAL car l'ORM consomme plus
-
     public function __construct(
-        private readonly EntityManagerInterface $entityManager,
-        private readonly CodeAllocationService $codeAllocationService
+        private readonly Connection $connection
     ) {
         parent::__construct();
     }
 
     /**
-     * @throws RandomException
+     * @throws Exception
      */
     protected function execute(InputInterface $input, OutputInterface $output): int
     {
@@ -38,50 +33,70 @@ class AllocateGainsCommand extends Command
         $stopwatch = new Stopwatch();
         $stopwatch->start('allocation');
 
-        // récupérer uniquement les codes qui n'ont pas encore de gain
-        $io->note('Récupération des codes sans gain...');
+        // récupérer les gains actifs et leurs probabilités
+        $gains = $this->connection->fetchAllAssociative(
+            'SELECT id, probability, name FROM gain'
+        );
 
-        // Utilisation de l'itérateur pour ne pas charger 500k objets d'un coup en mémoire
-        $query = $this->entityManager->createQuery('SELECT c FROM App\Entity\Code c WHERE c.gain IS NULL');
-        $iterableResult = $query->toIterable();
+        if (empty($gains)) {
+            $io->error('Aucun gain actif trouvé.');
+            return Command::FAILURE;
+        }
 
-        // Compter pour la barre de progression (optionnel)
-        $countQuery = $this->entityManager->createQuery('SELECT COUNT(c.id) FROM App\Entity\Code c WHERE c.gain IS NULL');
-        $total = $countQuery->getSingleScalarResult();
+        // récupérer tous les IDs des codes sans gain
+        $io->info('Chargement des IDs des codes...');
+        $codeIds = $this->connection->fetchFirstColumn(
+            'SELECT id FROM code WHERE gain_id IS NULL'
+        );
+        $totalCodes = count($codeIds);
 
-        if ($total == 0) {
+        if ($totalCodes === 0) {
             $io->success('Tous les codes ont déjà un gain.');
             return Command::SUCCESS;
         }
 
-        $io->progressStart($total);
-        $i = 0;
+        // mélanger les IDs pour l'aléatoire
+        shuffle($codeIds);
 
-        foreach ($iterableResult as $code) {
-            // utilise le service pour attribuer le gain
-            $this->codeAllocationService->allocateGainToCode($code);
+        $io->note(sprintf('Attribution de %d codes...', $totalCodes));
+        $offset = 0;
 
-            // batch processing
-            if (($i % self::BATCH_SIZE) === 0) {
-                $this->entityManager->flush();
-                $this->entityManager->clear(); // Libère la mémoire
+        foreach ($gains as $index => $gain) {
+            // Calcul du nombre de codes pour ce gain selon sa probabilité
+            // Pour le dernier gain, on prend tout ce qui reste pour éviter les arrondis
+            if ($index === count($gains) - 1) {
+                $countForThisGain = $totalCodes - $offset;
+            } else {
+                $countForThisGain = (int) round(($gain['probability'] / 100) * $totalCodes);
             }
 
-            $i++;
-            $io->progressAdvance();
+            if ($countForThisGain > 0) {
+                $slice = array_slice($codeIds, $offset, $countForThisGain);
+
+                $io->writeln(sprintf(' - Lot "%s" (%d%%) : %d codes', $gain['name'], $gain['probability'], $countForThisGain));
+
+                // UPDATE par lots de 5000 IDs pour ne pas faire exploser la requête SQL (limite de taille)
+                $chunks = array_chunk($slice, 5000);
+                foreach ($chunks as $chunk) {
+                    $this->connection->executeStatement(
+                        "UPDATE code SET gain_id = ? WHERE id IN (?)",
+                        [$gain['id'], $chunk],
+                        [\PDO::PARAM_INT, Connection::PARAM_INT_ARRAY]
+                    );
+                }
+
+                // Mettre à jour la quantité allouée dans la table gain
+                $this->connection->executeStatement(
+                    'UPDATE gain SET allocated_quantity = allocated_quantity + ? WHERE id = ?',
+                    [$countForThisGain, $gain['id']]
+                );
+
+                $offset += $countForThisGain;
+            }
         }
 
-        $this->entityManager->flush();
-        $this->entityManager->clear();
-
-        $io->progressFinish();
         $event = $stopwatch->stop('allocation');
-
-        $io->success(sprintf(
-            'Attribution terminée ! %d codes mis à jour en %.2f secondes.',
-            $i,
-            $event->getDuration() / 1000
-        ));
+        $io->success(sprintf('Terminé en %.2f secondes !', $event->getDuration() / 1000));
 
         return Command::SUCCESS;
     }
