@@ -9,6 +9,9 @@ use Random\RandomException;
 
 class CodeAllocationService
 {
+    // On stocke les gains en mémoire pour éviter les requêtes SELECT répétitives
+    private ?array $cachedGains = null;
+
     public function __construct(
         private readonly GainRepository         $gainRepository,
         private readonly EntityManagerInterface $em,
@@ -26,7 +29,7 @@ class CodeAllocationService
             $code->setGain($gain);
             $gain->incrementAllocatedQuantity();
             $this->em->persist($code);
-            $this->em->flush();
+
             return $gain;
         }
 
@@ -38,16 +41,20 @@ class CodeAllocationService
      */
     private function getRandomGain(): ?Gain
     {
-        $gains = $this->gainRepository->findActiveGains();
+        // Opti : ne chercher les gains en DB que s'ils ne sont pas en cache
+        // ou si l'EntityManager a été clear() (ce qui détache les entités).
+        if ($this->cachedGains === null || !$this->em->contains($this->cachedGains[0])) {
+            $this->cachedGains = $this->gainRepository->findActiveGains();
+        }
 
-        if (empty($gains)) {
+        if (empty($this->cachedGains)) {
             return null;
         }
 
         $random = random_int(0, 99);
         $cumulative = 0;
 
-        foreach ($gains as $gain) {
+        foreach ($this->cachedGains as $gain) {
             $cumulative += $gain->getProbability();
             if ($random < $cumulative && $gain->canAllocate()) {
                 return $gain;
@@ -55,6 +62,6 @@ class CodeAllocationService
         }
 
         // Si aucun gain ne convient, retourner le dernier gain actif
-        return $gains[count($gains) - 1] ?? null;
+        return $this->cachedGains[count($this->cachedGains) - 1] ?? null;
     }
 }
