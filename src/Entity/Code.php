@@ -7,7 +7,9 @@ use ApiPlatform\Metadata\Get;
 use ApiPlatform\Metadata\GetCollection;
 use ApiPlatform\Metadata\Patch;
 use ApiPlatform\Metadata\Post;
+use App\Dto\CodeInput;
 use App\Repository\CodeRepository;
+use App\State\CodeValidationProcessor;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\Mapping as ORM;
@@ -26,8 +28,11 @@ use Symfony\Component\Validator\Constraints as Assert;
         // Endpoint pour soumettre/valider un code
         new Post(
             uriTemplate: '/codes/validate',
+            denormalizationContext: ['groups' => ['code:validate']],
             security: "is_granted('ROLE_USER')",
-            name: 'validate_code'
+            input: CodeInput::class,
+            name: 'validate_code',
+            processor: CodeValidationProcessor::class,
         ),
         // Seul l'employé en boutique peut marquer un code comme utilisé via PATCH
         new Patch(
