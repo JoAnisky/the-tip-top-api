@@ -2,6 +2,8 @@
 
 namespace App\Entity;
 
+use ApiPlatform\Doctrine\Orm\Filter\SearchFilter;
+use ApiPlatform\Metadata\ApiFilter;
 use ApiPlatform\Metadata\ApiResource;
 use ApiPlatform\Metadata\Delete;
 use ApiPlatform\Metadata\Get;
@@ -51,6 +53,12 @@ use Symfony\Component\Security\Core\User\UserInterface;
 )]
 #[ORM\Entity(repositoryClass: UserRepository::class)]
 #[UniqueEntity('email')]
+#[ApiFilter(SearchFilter::class, properties: [
+    'email' => 'ipartial',
+    'phoneNumber' => 'exact',
+    'firstName' => 'ipartial',
+    'lastName' => 'ipartial'
+])]
 class User implements UserInterface, PasswordAuthenticatedUserInterface
 {
     #[Groups(['user:read'])]
