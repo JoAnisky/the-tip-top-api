@@ -4,9 +4,7 @@ pipeline {
     environment {
         APP_NAME = "the-tip-top-api"
         DOCKER_IMAGE = "joanisky/the-tip-top-api"
-        DOCKER_TAG = "latest"
-        DOCKER_TAG_BUILD = "${BUILD_NUMBER}"
-        REGISTRY = "index.docker.io"
+        DOCKER_TAG = "${BUILD_NUMBER}"
         KUBE_NAMESPACE = "the-tip-top-api"
         KUBE_DEPLOYMENT = "symfony-api"
     }
@@ -29,24 +27,22 @@ pipeline {
                 ]) {
                     sh '''
                         docker login -u $DOCKER_USER -p $DOCKER_PASS
+
                         docker build \
                             -f .docker/Dockerfile \
                             --target prod \
                             --build-arg APP_ENV=prod \
                             --build-arg APP_SECRET=dummysecret \
-                            -t ${DOCKER_IMAGE}:${DOCKER_TAG} \
-                            -t ${DOCKER_IMAGE}:${DOCKER_TAG_BUILD} .
+                            -t ${DOCKER_IMAGE}:${DOCKER_TAG} .
+
                         docker push ${DOCKER_IMAGE}:${DOCKER_TAG}
-                        docker push ${DOCKER_IMAGE}:${DOCKER_TAG_BUILD}
                     '''
                 }
             }
         }
 
         stage('Deploy JWT Secrets') {
-            when {
-                expression { env.GIT_BRANCH == 'origin/main' }
-            }
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 script {
                     withCredentials([
@@ -55,14 +51,10 @@ pipeline {
                         file(credentialsId: 'jwt-public-key',  variable: 'JWT_PUBLIC_FILE')
                     ]) {
                         sh '''
-                            mkdir -p ~/.kube
-                            cp $KUBECONFIG_FILE ~/.kube/config
-                            chmod 600 ~/.kube/config
+                            export KUBECONFIG=$KUBECONFIG_PATH
 
-                            echo "Deleting old JWT secret (if exists)..."
+                            echo "Ensuring JWT secrets are up to date..."
                             kubectl delete secret jwt-keys -n ${KUBE_NAMESPACE} || true
-
-                            echo "Creating new JWT secret from files..."
                             kubectl create secret generic jwt-keys \
                                 --from-file=private.pem=$JWT_PRIVATE_FILE \
                                 --from-file=public.pem=$JWT_PUBLIC_FILE \
@@ -73,7 +65,7 @@ pipeline {
             }
         }
 
-        stage('Deploy to Kubernetes') {
+        stage('Deploy Kubernetes & Migrate') {
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
             }
@@ -83,56 +75,28 @@ pipeline {
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
                     ]) {
                         sh '''
-                            mkdir -p ~/.kube
-                            cp $KUBECONFIG_FILE ~/.kube/config
-                            chmod 600 ~/.kube/config
+                            export KUBECONFIG=$KUBECONFIG_PATH
 
                             echo "** Applying Kubernetes manifests **"
-                            kubectl apply -k k8s/
+                            kubectl apply -k k8s/ -n ${KUBE_NAMESPACE}
 
-                            echo "** Updating API image **"
+                            echo "** 2. Updating Image to ${DOCKER_TAG} **"
+                            # Le changement de tag force le rollout natif de K8s
                             kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
 
-                            echo "** Force new rollout **"
-                            TIMESTAMP=$(date +%s)
-                            kubectl patch deployment ${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} \
-                                -p '{"spec":{"template":{"metadata":{"annotations":{"timestamp":"'$TIMESTAMP'"}}}}}'
-
-                            echo "** Waiting for rollout **"
+                            echo "** 3. Waiting for Rollout **"
                             kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
 
-                            echo "** Restarting phpMyAdmin **"
-                            kubectl rollout restart deployment/phpmyadmin -n ${KUBE_NAMESPACE}
+                            echo "** 4. Post-Deployment Commands **"
+                            # On execute les commandes Symfony sur le nouveau Pod
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console doctrine:database:create --if-not-exists --env=prod || true
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console doctrine:schema:update --force --env=prod || true
 
-                            echo "** Database create/update **"
-                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
-                                php bin/console doctrine:database:create --if-not-exists --env=prod || true
+                            # Cache clear pour être sûr
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console cache:clear --env=prod
 
-                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
-                                php bin/console doctrine:schema:update --force --env=prod || true
-
-                            echo "Deployment completed!"
-                        '''
-                    }
-                }
-            }
-        }
-
-        stage('Verify Deployment') {
-            when {
-                expression { env.GIT_BRANCH == 'origin/main' }
-            }
-            steps {
-                script {
-                    withCredentials([file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')]) {
-                        sh '''
-                            cp $KUBECONFIG_FILE ~/.kube/config
-
-                            echo "=== Pods ==="
-                            kubectl get pods -n ${KUBE_NAMESPACE}
-
-                            echo "=== Secrets ==="
-                            kubectl get secrets -n ${KUBE_NAMESPACE} | grep jwt
+                            echo "** 5. Restarting phpMyAdmin **"
+                            kubectl rollout restart deployment/phpmyadmin -n ${KUBE_NAMESPACE} || true
                         '''
                     }
                 }
@@ -142,6 +106,8 @@ pipeline {
 
     post {
         always {
+            // Supprime les images locales pour ne pas saturer le disque du VPS
+            sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
             cleanWs()
         }
         success {
