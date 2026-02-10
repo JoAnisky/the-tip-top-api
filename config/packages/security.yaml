@@ -17,7 +17,22 @@ security:
             pattern: ^/(_(profiler|wdt)|css|images|js)/
             security: false
 
-        login:
+        # Auth web pour le front (cookies + refresh token)
+        web_auth:
+            pattern: ^/auth
+            stateless: false
+            provider: app_user_provider
+            json_login:
+                check_path: /auth/login
+                username_path: email
+                password_path: password
+                success_handler: App\Security\AuthenticationSuccessHandler
+                failure_handler: App\Security\AuthenticationFailureHandler
+            logout:
+                path: /auth/logout
+
+        # API Platform avec JWT
+        api_login:
             pattern: ^/api/login$
             stateless: true
             json_login:
@@ -36,11 +51,20 @@ security:
     # Easy way to control access for large sections of your site
     # Note: Only the *first* access control that matches will be used
     access_control:
+        # routes publiques
         - { path: ^/api$, roles: PUBLIC_ACCESS }
         - { path: ^/api/docs, roles: PUBLIC_ACCESS }
         - { path: ^/api/login$, roles: PUBLIC_ACCESS }
         - { path: ^/api/register$, roles: PUBLIC_ACCESS }
+
+        # routes auth publiques
+        - { path: ^/auth/login$, roles: PUBLIC_ACCESS }
+        - { path: ^/auth/register$, roles: PUBLIC_ACCESS }
+        - { path: ^/auth/refresh$, roles: PUBLIC_ACCESS }
+
+        # routes protégées
         - { path: ^/api, roles: ROLE_USER }
+        - { path: ^/auth, roles: IS_AUTHENTICATED_FULLY }
 
 when@test:
     security:
