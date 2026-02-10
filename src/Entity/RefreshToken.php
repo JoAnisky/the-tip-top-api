@@ -2,18 +2,23 @@
 
 namespace App\Entity;
 
+use App\Repository\RefreshTokenRepository;
 use Doctrine\ORM\Mapping as ORM;
-use Gesdinet\JWTRefreshTokenBundle\Entity\RefreshToken as BaseRefreshToken;
 use Random\RandomException;
 
-#[ORM\Entity]
+#[ORM\Entity(repositoryClass: RefreshTokenRepository::class)]
 #[ORM\Table(name: 'refresh_tokens')]
-class RefreshToken extends BaseRefreshToken
+class RefreshToken
 {
+    #[ORM\Id]
+    #[ORM\GeneratedValue]
+    #[ORM\Column]
+    private ?int $id = null;
+
     #[ORM\Column(length: 255, unique: true)]
     private ?string $token = null;
 
-    #[ORM\ManyToOne(targetEntity: User::class, inversedBy: 'refreshTokens')]
+    #[ORM\ManyToOne(targetEntity: User::class)]
     #[ORM\JoinColumn(nullable: false, onDelete: 'CASCADE')]
     private ?User $user = null;
 
@@ -23,8 +28,8 @@ class RefreshToken extends BaseRefreshToken
     #[ORM\Column]
     private ?\DateTimeImmutable $createdAt = null;
 
-    #[ORM\Column(type: 'boolean')]
-    private ?bool $revoked = false;
+    #[ORM\Column(type: 'boolean', options: ['default' => false])]
+    private bool $revoked = false;
 
     /**
      * @throws RandomException
@@ -32,12 +37,19 @@ class RefreshToken extends BaseRefreshToken
     public function __construct()
     {
         $this->createdAt = new \DateTimeImmutable();
+        $this->expiresAt = new \DateTimeImmutable('+30 days');
         $this->token = bin2hex(random_bytes(32));
+        $this->revoked = false;
     }
 
     public function isValid(): bool
     {
         return !$this->revoked && $this->expiresAt > new \DateTimeImmutable();
+    }
+
+    public function getId(): ?int
+    {
+        return $this->id;
     }
 
     public function getToken(): ?string
@@ -48,7 +60,6 @@ class RefreshToken extends BaseRefreshToken
     public function setToken(string $token): static
     {
         $this->token = $token;
-
         return $this;
     }
 
@@ -60,7 +71,6 @@ class RefreshToken extends BaseRefreshToken
     public function setUser(?User $user): static
     {
         $this->user = $user;
-
         return $this;
     }
 
@@ -72,7 +82,6 @@ class RefreshToken extends BaseRefreshToken
     public function setExpiresAt(\DateTimeImmutable $expiresAt): static
     {
         $this->expiresAt = $expiresAt;
-
         return $this;
     }
 
@@ -81,14 +90,7 @@ class RefreshToken extends BaseRefreshToken
         return $this->createdAt;
     }
 
-    public function setCreatedAt(\DateTimeImmutable $createdAt): static
-    {
-        $this->createdAt = $createdAt;
-
-        return $this;
-    }
-
-    public function isRevoked(): ?bool
+    public function isRevoked(): bool
     {
         return $this->revoked;
     }
@@ -96,7 +98,6 @@ class RefreshToken extends BaseRefreshToken
     public function setRevoked(bool $revoked): static
     {
         $this->revoked = $revoked;
-
         return $this;
     }
 }
