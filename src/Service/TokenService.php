@@ -15,7 +15,7 @@ class TokenService
     )
     {}
 
-    public function createAccesToken(User $user): string
+    public function createAccessToken(User $user): string
     {
         return $this->jwtManager->create($user);
     }
