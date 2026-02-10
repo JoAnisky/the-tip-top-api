@@ -145,6 +145,12 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\OneToMany(targetEntity: RefreshToken::class, mappedBy: 'user')]
     private Collection $refreshTokens;
 
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $address = null;
+
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $isNewsletterSubscribed = false;
+
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
@@ -439,6 +445,30 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
                 $refreshToken->setUser(null);
             }
         }
+
+        return $this;
+    }
+
+    public function getAddress(): ?string
+    {
+        return $this->address;
+    }
+
+    public function setAddress(?string $address): static
+    {
+        $this->address = $address;
+
+        return $this;
+    }
+
+    public function isNewsletterSubscribed(): ?bool
+    {
+        return $this->isNewsletterSubscribed;
+    }
+
+    public function setIsNewsletterSubscribed(bool $isNewsletterSubscribed): static
+    {
+        $this->isNewsletterSubscribed = $isNewsletterSubscribed;
 
         return $this;
     }
