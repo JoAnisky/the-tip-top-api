@@ -112,6 +112,7 @@ final class AuthController extends AbstractController
     #[Route('/logout', methods: ['POST'])]
     public function logout(Request $request): JsonResponse
     {
+        // révocation du refresh token en base de données
         $token = $request->cookies->get('refresh_token');
         if ($token) {
             $refreshToken = $this->tokenService->validateRefreshToken($token);
@@ -121,7 +122,26 @@ final class AuthController extends AbstractController
         }
 
         $response = new JsonResponse(['success' => true]);
-        $response->headers->clearCookie('refresh_token', '/', $_ENV['SESSION_COOKIE_DOMAIN'] ?? null);
+
+        // Configuration commune pour la suppression
+        $domain = $_ENV['SESSION_COOKIE_DOMAIN'] ?? null;
+        $secure = ($_ENV['SESSION_COOKIE_SECURE'] ?? 'false') === 'true';
+
+        // liste des cookies à supprimer
+        $cookiesToDelete = ['refresh_token', 'access_token', 'user_data'];
+
+        foreach ($cookiesToDelete as $cookieName) {
+            $response->headers->setCookie(
+                Cookie::create($cookieName)
+                    ->withValue('')
+                    ->withExpires(1) // expire immédiatement
+                    ->withPath('/')
+                    ->withDomain($domain)
+                    ->withSecure($secure)
+                    ->withHttpOnly(true)
+            );
+        }
+
         return $response;
     }
 

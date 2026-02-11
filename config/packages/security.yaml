@@ -28,8 +28,6 @@ security:
                 password_path: password
                 success_handler: App\Security\AuthenticationSuccessHandler
                 failure_handler: App\Security\AuthenticationFailureHandler
-            logout:
-                path: /auth/logout
 
         # API Platform avec JWT
         api_login:
@@ -61,6 +59,7 @@ security:
         - { path: ^/auth/login$, roles: PUBLIC_ACCESS }
         - { path: ^/auth/register$, roles: PUBLIC_ACCESS }
         - { path: ^/auth/refresh$, roles: PUBLIC_ACCESS }
+        - { path: ^/auth/logout$, roles: PUBLIC_ACCESS }
 
         # routes protégées
         - { path: ^/api, roles: ROLE_USER }
