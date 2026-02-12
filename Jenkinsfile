@@ -64,8 +64,36 @@ pipeline {
                 }
             }
         }
+        stage('Deploy to Kubernetes') {
+            when {
+                expression { env.GIT_BRANCH == 'origin/main' }
+            }
+            steps {
+                script {
+                    withCredentials([
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
+                    ]) {
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG_FILE
 
-        stage('Deploy Kubernetes & Migrate') {
+                            echo "Application des manifests Kubernetes..."
+                            kubectl apply -k k8s/ -n ${KUBE_NAMESPACE}
+
+                            echo "Mise à jour de l'image vers: ${DOCKER_TAG}"
+                            kubectl set image deployment/${KUBE_DEPLOYMENT} \
+                                app=${DOCKER_IMAGE}:${DOCKER_TAG} \
+                                -n ${KUBE_NAMESPACE}
+
+                            echo "Attente du rollout..."
+                            kubectl rollout status deployment/${KUBE_DEPLOYMENT} \
+                                -n ${KUBE_NAMESPACE} \
+                                --timeout=300s
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Database Migrations') {
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
             }
@@ -77,27 +105,84 @@ pipeline {
                         sh '''
                             export KUBECONFIG=$KUBECONFIG_PATH
 
-                            echo "** Applying Kubernetes manifests **"
-                            kubectl apply -k k8s/ -n ${KUBE_NAMESPACE}
+                            echo "Mise à jour de la base de données ..."
 
-                            echo "** 2. Updating Image to ${DOCKER_TAG} **"
-                            # Le changement de tag force le rollout natif de K8s
-                            kubectl set image deployment/${KUBE_DEPLOYMENT} app=${DOCKER_IMAGE}:${DOCKER_TAG} -n ${KUBE_NAMESPACE}
+                            # Crée la base si elle n'existe pas
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:database:create --if-not-exists --env=prod || true
 
-                            echo "** 3. Waiting for Rollout **"
-                            kubectl rollout status deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} --timeout=300s
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                php bin/console doctrine:schema:update --force --env=prod || true
 
-                            echo "** 4. Post-Deployment Commands **"
-                            # On execute les commandes Symfony sur le nouveau Pod
-                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console doctrine:database:create --if-not-exists --env=prod || true
-                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console doctrine:schema:update --force --env=prod || true
+                            # Cache clear
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                php bin/console cache:clear --env=prod
 
-                            # Cache clear pour être sûr
-                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- php bin/console cache:clear --env=prod
-
-                            echo "** 5. Restarting phpMyAdmin **"
+                            echo "Redémarrage de phpMyAdmin"
                             kubectl rollout restart deployment/phpmyadmin -n ${KUBE_NAMESPACE} || true
                         '''
+                    }
+                }
+            }
+        }
+        stage('Verify Deployment') {
+            when {
+                expression { env.GIT_BRANCH == 'origin/main' }
+            }
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
+                ]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
+
+                        echo "État du déploiement :"
+                        echo ""
+
+                        echo "=== Pods ==="
+                        kubectl get pods -n ${KUBE_NAMESPACE}
+                        echo ""
+
+                        echo "=== Services ==="
+                        kubectl get svc -n ${KUBE_NAMESPACE}
+                        echo ""
+
+                        echo "=== Ingress ==="
+                        kubectl get ingress -n ${KUBE_NAMESPACE}
+                        echo ""
+
+                        echo "=== Secrets ==="
+                        kubectl get secrets -n ${KUBE_NAMESPACE}
+                        echo ""
+
+                        echo "=== ConfigMaps ==="
+                        kubectl get configmaps -n ${KUBE_NAMESPACE}
+                    '''
+                }
+            }
+        }
+        stage('Health Check') {
+            steps {
+                script {
+                    timeout(time: 2, unit: 'MINUTES') {
+                        waitUntil {
+                            script {
+                                def response = sh(
+                                    // Teste la route /api (doc Swagger)
+                                    script: 'curl -s -o /dev/null -w "%{http_code}" https://api.the-tip-top.jonathanlore.fr/api',
+                                    returnStdout: true
+                                ).trim()
+
+                                if (response == '200') {
+                                    echo "✅ API accessible"
+                                    return true  // Stop le wait
+                                } else {
+                                    echo "⏳ En attente..."
+                                    sleep 5
+                                    return false  // Continue le wait
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -111,10 +196,11 @@ pipeline {
             cleanWs()
         }
         success {
-            echo "✅ ${APP_NAME} deployed successfully!"
+            echo "✅ ${APP_NAME} déployé avec succès !"
+            echo "🌐 API : https://api.the-tip-top.jonathanlore.fr/api"
         }
         failure {
-            echo "❌ Pipeline failed"
+            echo "❌ Pipeline échoué"
         }
     }
 }
