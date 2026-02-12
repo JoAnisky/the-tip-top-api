@@ -81,6 +81,7 @@ pipeline {
                                 --from-literal=GOOGLE_CLIENT_SECRET=${GOOGLE_SECRET} \
                                 --from-literal=FACEBOOK_CLIENT_ID='' \
                                 --from-literal=FACEBOOK_CLIENT_SECRET='' \
+                                --from-literal=TRUSTED_PROXIES='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16' \
                                 -n ${KUBE_NAMESPACE} \
                                 --dry-run=client -o yaml | kubectl apply -f -
                         '''
