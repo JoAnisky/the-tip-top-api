@@ -25,3 +25,10 @@ services:
     App\State\CodeValidationProcessor:
         arguments:
             $codeValidationLimiter: '@limiter.code_validation_limiter'
+
+    # Configuration OAuthController avec binding explicite
+    App\Controller\OAuthController:
+        arguments:
+            $cookieDomain: '%env(SESSION_COOKIE_DOMAIN)%'
+            $cookieSecure: '%env(bool:SESSION_COOKIE_SECURE)%'
+            $frontendUrl: '%env(FRONTEND_URL)%'
