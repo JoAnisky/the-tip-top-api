@@ -3,12 +3,10 @@
 namespace App\Repository;
 
 use App\Entity\SocialAccount;
+use App\Entity\User;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
-/**
- * @extends ServiceEntityRepository<SocialAccount>
- */
 class SocialAccountRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
@@ -16,28 +14,33 @@ class SocialAccountRepository extends ServiceEntityRepository
         parent::__construct($registry, SocialAccount::class);
     }
 
-    //    /**
-    //     * @return SocialAccount[] Returns an array of SocialAccount objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('s.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+    /**
+     * Trouve un compte social par provider et ID
+     */
+    public function findByProviderAndId(string $provider, string $providerId): ?SocialAccount
+    {
+        return $this->findOneBy([
+            'providerName' => $provider,
+            'providerId' => $providerId
+        ]);
+    }
 
-    //    public function findOneBySomeField($value): ?SocialAccount
-    //    {
-    //        return $this->createQueryBuilder('s')
-    //            ->andWhere('s.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->getQuery()
-    //            ->getOneOrNullResult()
-    //        ;
-    //    }
+    /**
+     * Trouve tous les comptes sociaux d'un user
+     */
+    public function findByUser(User $user): array
+    {
+        return $this->findBy(['user' => $user], ['createdAt' => 'DESC']);
+    }
+
+    /**
+     * Vérifie si un provider ID est déjà utilisé
+     */
+    public function existsByProvider(string $provider, string $providerId): bool
+    {
+        return $this->count([
+                'providerName' => $provider,
+                'providerId' => $providerId
+            ]) > 0;
+    }
 }
