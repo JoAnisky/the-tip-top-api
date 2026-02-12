@@ -151,6 +151,9 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private ?bool $isNewsletterSubscribed = false;
 
+    #[ORM\Column(type: 'boolean')]
+    private ?bool $isVerified = false;
+
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
@@ -497,5 +500,17 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
             }
         }
         return null;
+    }
+
+    public function isVerified(): ?bool
+    {
+        return $this->isVerified;
+    }
+
+    public function setIsVerified(bool $isVerified): static
+    {
+        $this->isVerified = $isVerified;
+
+        return $this;
     }
 }
