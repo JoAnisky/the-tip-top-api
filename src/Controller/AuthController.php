@@ -3,6 +3,7 @@
 namespace App\Controller;
 
 use App\Entity\User;
+use App\Enum\Gender;
 use App\Service\TokenService;
 use Doctrine\ORM\EntityManagerInterface;
 use Exception;
@@ -36,7 +37,8 @@ final class AuthController extends AbstractController
         $user->setEmail($data['email'] ?? '');
         $user->setFirstName($data['firstName'] ?? '');
         $user->setLastName($data['lastName'] ?? '');
-        $user->setGender($data['gender'] ?? 'male');
+        $genderValue = $data['gender'] ?? 'male';
+        $user->setGender(Gender::from($genderValue));
 
         if (isset($data['phoneNumber'])) $user->setPhoneNumber($data['phoneNumber']);
         if (isset($data['address'])) $user->setAddress($data['address']);
