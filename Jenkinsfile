@@ -40,7 +40,6 @@ pipeline {
                 }
             }
         }
-
         stage('Deploy JWT Secrets') {
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
@@ -59,6 +58,31 @@ pipeline {
                                 --from-file=private.pem=$JWT_PRIVATE_FILE \
                                 --from-file=public.pem=$JWT_PUBLIC_FILE \
                                 -n ${KUBE_NAMESPACE}
+                        '''
+                    }
+                }
+            }
+        }
+        stage('Deploy OAuth Secrets') {
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
+            steps {
+                script {
+                    withCredentials([
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
+                        string(credentialsId: 'GOOGLE_CLIENT_ID', variable: 'GOOGLE_ID'),
+                        string(credentialsId: 'GOOGLE_CLIENT_SECRET', variable: 'GOOGLE_SECRET')
+                    ]) {
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG_FILE
+
+                            echo "Deploying OAuth secrets..."
+                            kubectl create secret generic oauth-secrets \
+                                --from-literal=GOOGLE_CLIENT_ID=${GOOGLE_ID} \
+                                --from-literal=GOOGLE_CLIENT_SECRET=${GOOGLE_SECRET} \
+                                --from-literal=FACEBOOK_CLIENT_ID='' \
+                                --from-literal=FACEBOOK_CLIENT_SECRET='' \
+                                -n ${KUBE_NAMESPACE} \
+                                --dry-run=client -o yaml | kubectl apply -f -
                         '''
                     }
                 }
