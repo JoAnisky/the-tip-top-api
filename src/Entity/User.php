@@ -130,7 +130,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     /**
      * @var Collection<int, SocialAccount>
      */
-    #[ORM\OneToMany(targetEntity: SocialAccount::class, mappedBy: 'user')]
+    #[ORM\OneToMany(targetEntity: SocialAccount::class, mappedBy: 'user', orphanRemoval: true)]
     private Collection $socialAccounts;
 
     #[ORM\OneToOne(inversedBy: 'user', cascade: ['persist'])]
@@ -473,4 +473,29 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
+    /**
+     * Vérifie si un compte social est déjà lié
+     */
+    public function hasSocialAccount(string $provider): bool
+    {
+        foreach ($this->socialAccounts as $account) {
+            if ($account->getProviderName() === $provider) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Récupère un compte social spécifique
+     */
+    public function getSocialAccount(string $provider): ?SocialAccount
+    {
+        foreach ($this->socialAccounts as $account) {
+            if ($account->getProviderName() === $provider) {
+                return $account;
+            }
+        }
+        return null;
+    }
 }
