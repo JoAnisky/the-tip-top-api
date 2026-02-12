@@ -8,6 +8,7 @@ use App\Repository\SocialAccountRepository;
 use App\Service\TokenService as JWTService;
 use Doctrine\ORM\EntityManagerInterface;
 use KnpU\OAuth2ClientBundle\Client\ClientRegistry;
+use Random\RandomException;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\RedirectResponse;
@@ -104,6 +105,7 @@ class OAuthController extends AbstractController
 
     /**
      * Logique de recherche/création de user avec compte social
+     * @throws RandomException
      */
     private function findOrCreateUserWithSocialAccount(
         string $provider,
@@ -174,8 +176,9 @@ class OAuthController extends AbstractController
 
     private function createAuthResponse(User $user): Response
     {
-        $accessToken = $this->jwtService->generateAccessToken($user);
-        $refreshToken = $this->jwtService->generateRefreshToken($user);
+        $accessToken = $this->jwtService->createAccessToken($user);
+        $refreshTokenEntity = $this->jwtService->createRefreshToken($user);
+        $refreshToken = $refreshTokenEntity->getToken();
 
         $userData = [
             'id' => $user->getId(),
@@ -187,28 +190,10 @@ class OAuthController extends AbstractController
 
         $response = new RedirectResponse($this->frontendUrl . '/');
 
-        $cookieOptions = [
-            'path' => '/',
-            'domain' => $this->cookieDomain,
-            'secure' => $this->cookieSecure,
-            'httponly' => true,
-            'samesite' => 'lax',
-        ];
-
-        $response->headers->setCookie(
-            new Cookie('access_token', $accessToken, time() + 900, ...$cookieOptions)
-        );
-        $response->headers->setCookie(
-            new Cookie('refresh_token', $refreshToken, time() + 2592000, ...$cookieOptions)
-        );
-        $response->headers->setCookie(
-            new Cookie('user_data', json_encode($userData), time() + 900,
-                domain: $this->cookieDomain,
-                secure: $this->cookieSecure,
-                httponly: false,
-                samesite: 'lax'
-            )
-        );
+        // Helper pour créer les cookies
+        $this->addAuthCookie($response, 'access_token', $accessToken, 900);
+        $this->addAuthCookie($response, 'refresh_token', $refreshToken, 2592000);
+        $this->addAuthCookie($response, 'user_data', json_encode($userData), 900, false); // httpOnly = false
 
         return $response;
     }
@@ -217,6 +202,28 @@ class OAuthController extends AbstractController
     {
         return new RedirectResponse(
             $this->frontendUrl . '/login?error=' . urlencode('Erreur OAuth: ' . $message)
+        );
+    }
+
+    private function addAuthCookie(
+        Response $response,
+        string $name,
+        string $value,
+        int $lifetime,
+        bool $httpOnly = true
+    ): void
+    {
+        $response->headers->setCookie(
+            new Cookie(
+                name: $name,
+                value: $value,
+                expire: time() + $lifetime,
+                path: '/',
+                domain: $this->cookieDomain,
+                secure: $this->cookieSecure,
+                httpOnly: $httpOnly,
+                sameSite: 'lax'
+            )
         );
     }
 }
