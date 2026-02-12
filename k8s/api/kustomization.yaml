@@ -3,6 +3,6 @@ kind: Kustomization
 
 resources:
     - deployment-api.yaml
+    - configmap.yaml
     - service-api.yaml
     - ingress-api.yaml
-#    - job-migrations.yaml
