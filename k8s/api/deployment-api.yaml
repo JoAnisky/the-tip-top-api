@@ -28,6 +28,8 @@ spec:
                       # Variables depuis Secret (sensibles)
                       - secretRef:
                             name: symfony-env
+                      - secretRef:
+                            name: oauth-secrets
                   volumeMounts:
                       - name: jwt-keys
                         mountPath: /var/www/html/config/jwt
