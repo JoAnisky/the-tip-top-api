@@ -71,6 +71,8 @@ pipeline {
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
                         string(credentialsId: 'GOOGLE_CLIENT_ID', variable: 'GOOGLE_ID'),
                         string(credentialsId: 'GOOGLE_CLIENT_SECRET', variable: 'GOOGLE_SECRET')
+                        string(credentialsId: 'FACEBOOK_CLIENT_ID', variable: 'FACEBOOK_ID'),
+                        string(credentialsId: 'FACEBOOK_CLIENT_SECRET', variable: 'FACEBOOK_SECRET')
                     ]) {
                         sh '''
                             export KUBECONFIG=$KUBECONFIG_FILE
@@ -79,8 +81,8 @@ pipeline {
                             kubectl create secret generic oauth-secrets \
                                 --from-literal=GOOGLE_CLIENT_ID=${GOOGLE_ID} \
                                 --from-literal=GOOGLE_CLIENT_SECRET=${GOOGLE_SECRET} \
-                                --from-literal=FACEBOOK_CLIENT_ID='' \
-                                --from-literal=FACEBOOK_CLIENT_SECRET='' \
+                                --from-literal=FACEBOOK_CLIENT_ID=${FACEBOOK_ID} \
+                                --from-literal=FACEBOOK_CLIENT_SECRET=${FACEBOOK_SECRET} \
                                 --from-literal=TRUSTED_PROXIES='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16' \
                                 -n ${KUBE_NAMESPACE} \
                                 --dry-run=client -o yaml | kubectl apply -f -
