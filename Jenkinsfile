@@ -70,7 +70,7 @@ pipeline {
                     withCredentials([
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
                         string(credentialsId: 'GOOGLE_CLIENT_ID', variable: 'GOOGLE_ID'),
-                        string(credentialsId: 'GOOGLE_CLIENT_SECRET', variable: 'GOOGLE_SECRET')
+                        string(credentialsId: 'GOOGLE_CLIENT_SECRET', variable: 'GOOGLE_SECRET'),
                         string(credentialsId: 'FACEBOOK_CLIENT_ID', variable: 'FACEBOOK_ID'),
                         string(credentialsId: 'FACEBOOK_CLIENT_SECRET', variable: 'FACEBOOK_SECRET')
                     ]) {
