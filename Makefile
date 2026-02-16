@@ -21,3 +21,5 @@ logs-dev:
 # Afficher les logs du conteneur app en prod
 logs-prod:
 	docker compose --env-file .docker/.env.docker.prod logs -f ttt-api
+
+restart-dev: down-dev up-dev
