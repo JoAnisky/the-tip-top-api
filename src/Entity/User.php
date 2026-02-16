@@ -91,7 +91,7 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(nullable: true)]
-    private ?\DateTimeImmutable $birthdate = null;
+    private ?\DateTimeImmutable $birthDate = null;
 
     #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(length: 10, nullable: true, enumType: Gender::class)]
@@ -146,11 +146,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     private Collection $refreshTokens;
 
     #[ORM\Column(length: 255, nullable: true)]
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     private ?string $address = null;
 
+    #[Groups(['user:read', 'user:create', 'user:update'])]
     #[ORM\Column(type: 'boolean')]
-    private ?bool $isNewsletterSubscribed = false;
+    private ?bool $newsletter = false;
 
+    #[Groups(['user:read'])]
     #[ORM\Column(type: 'boolean')]
     private ?bool $isVerified = false;
 
@@ -266,14 +269,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         // (e.g., a plain password which is not needed after hashing it)
     }
 
-    public function getBirthdate(): ?\DateTimeImmutable
+    public function getBirthDate(): ?\DateTimeImmutable
     {
-        return $this->birthdate;
+        return $this->birthDate;
     }
 
-    public function setBirthdate(?\DateTimeImmutable $birthdate): static
+    public function setBirthdate(?\DateTimeImmutable $birthDate): static
     {
-        $this->birthdate = $birthdate;
+        $this->birthDate = $birthDate;
 
         return $this;
     }
@@ -464,14 +467,14 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
         return $this;
     }
 
-    public function isNewsletterSubscribed(): ?bool
+    public function getNewsletter(): ?bool
     {
-        return $this->isNewsletterSubscribed;
+        return $this->newsletter;
     }
 
-    public function setIsNewsletterSubscribed(bool $isNewsletterSubscribed): static
+    public function setNewsletter(bool $newsletter): static
     {
-        $this->isNewsletterSubscribed = $isNewsletterSubscribed;
+        $this->newsletter = $newsletter;
 
         return $this;
     }
