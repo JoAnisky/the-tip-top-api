@@ -47,7 +47,7 @@ final class AuthController extends AbstractController
         if (isset($data['birthDate'])) {
             $user->setBirthDate(new \DateTimeImmutable($data['birthDate']));
         }
-        $user->setIsNewsletterSubscribed($data['newsletter'] ?? false);
+        $user->setNewsletter($data['newsletter'] ?? false);
 
         if (empty($data['plainPassword'])) {
             return new JsonResponse(['success' => false, 'message' => 'Mot de passe requis'], 400);
@@ -69,8 +69,20 @@ final class AuthController extends AbstractController
 
         return new JsonResponse([
             'success' => true,
-            'user' => ['id' => $user->getId(), 'email' => $user->getEmail()]
-        ], 201);
+            'user' => [
+                'id' => $user->getId(),
+                'email' => $user->getEmail(),
+                'firstName' => $user->getFirstName(),
+                'lastName' => $user->getLastName(),
+                'gender' => $user->getGender(),
+                'birthDate' => $user->getBirthDate()?->format('Y-m-d'),
+                'address' => $user->getAddress(),
+                'postalCode' => $user->getPostalCode(),
+                'city' => $user->getCity(),
+                'newsletter' => $user->getNewsletter(),
+                'hasOAuthAccounts' => count($user->getSocialAccounts()) > 0,
+            ]
+        ]);
     }
 
     #[Route('/login', methods: ['POST'])]

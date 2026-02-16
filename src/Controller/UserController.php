@@ -7,27 +7,33 @@ use App\Enum\Gender;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
+use Symfony\Component\HttpFoundation\Cookie;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\PasswordHasher\Hasher\UserPasswordHasherInterface;
-use Symfony\Component\Routing\Annotation\Route;
+use Symfony\Component\Routing\Attribute\Route;
 use Symfony\Component\Security\Http\Attribute\IsGranted;
 use Symfony\Component\Validator\Validator\ValidatorInterface;
 
-#[Route('/auth')]
+#[Route('/api/user')]
 #[IsGranted('ROLE_USER')]
-final class UserController extends AbstractController
+class UserController extends AbstractController
 {
     public function __construct(
         private EntityManagerInterface $em,
         private UserPasswordHasherInterface $passwordHasher,
         private ValidatorInterface $validator
     ) {}
-    #[Route('/me', methods: ['GET'])]
+    #[Route('/me', name: 'api_users_me', methods: ['GET'])]
+    #[IsGranted('ROLE_USER')]
     public function getCurrentUser(): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not authenticated'], 401);
+        }
 
         return $this->json([
             'id' => $user->getId(),
@@ -49,11 +55,17 @@ final class UserController extends AbstractController
     /**
      * @throws \Exception
      */
-    #[Route('/me', methods: ['PATCH'])]
+    #[Route('/me', name: 'api_users_update', methods: ['PATCH'])]
+    #[IsGranted('ROLE_USER')]
     public function updateProfile(Request $request): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
+
+        if (!$user) {
+            return $this->json(['error' => 'User not authenticated'], 401);
+        }
+
         $data = json_decode($request->getContent(), true);
 
         // Mise à jour des champs
@@ -138,15 +150,42 @@ final class UserController extends AbstractController
         }
 
         $this->em->flush();
+        $updatedUserData = [
+            'id' => $user->getId(),
+            'email' => $user->getEmail(),
+            'firstName' => $user->getFirstName(),
+            'lastName' => $user->getLastName(),
+            'gender' => $user->getGender()?->value,
+            'birthDate' => $user->getBirthDate()?->format('Y-m-d'),
+            'address' => $user->getAddress(),
+            'postalCode' => $user->getPostalCode(),
+            'city' => $user->getCity(),
+            'newsletter' => $user->getNewsletter(),
+            'roles' => $user->getRoles(),
+            'isVerified' => $user->isVerified(),
+            'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0
+        ];
 
-        return $this->json([
+        $response = new JsonResponse([
             'message' => 'Profil mis à jour avec succès',
-            'user' => [
-                'id' => $user->getId(),
-                'email' => $user->getEmail(),
-                'firstName' => $user->getFirstName(),
-                'lastName' => $user->getLastName()
-            ]
+            'user' => $updatedUserData
         ]);
+
+        // mettre à jour le cookie user_data
+        $domain = $_ENV['SESSION_COOKIE_DOMAIN'] ?? null;
+        $secure = ($_ENV['SESSION_COOKIE_SECURE'] ?? 'false') === 'true';
+
+        $userDataCookie = Cookie::create('user_data')
+            ->withValue(json_encode($updatedUserData))
+            ->withExpires(time() + 900) // 15 minutes (comme le access_token)
+            ->withPath('/')
+            ->withDomain($domain)
+            ->withSecure($secure)
+            ->withHttpOnly(true)
+            ->withSameSite(Cookie::SAMESITE_LAX);
+
+        $response->headers->setCookie($userDataCookie);
+
+        return $response;
     }
 }
