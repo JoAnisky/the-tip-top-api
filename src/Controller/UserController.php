@@ -2,6 +2,7 @@
 
 namespace App\Controller;
 
+use App\Entity\Code;
 use App\Entity\User;
 use App\Enum\Gender;
 use Doctrine\ORM\EntityManagerInterface;
@@ -31,6 +32,30 @@ class UserController extends AbstractController
         /** @var User $user */
         $user = $this->getUser();
 
+        $validatedCodes = $this->em
+            ->getRepository(Code::class)
+            ->createQueryBuilder('c')
+            ->leftJoin('c.gain', 'g')
+            ->addSelect('g')
+            ->where('c.winner = :user')
+            ->andWhere('c.isValidated = true')
+            ->setParameter('user', $user)
+            ->orderBy('c.validatedOn', 'DESC')
+            ->getQuery()
+            ->getResult();
+
+        $gains = array_map(function(Code $code) {
+            return [
+                'id' => $code->getId(),
+                'code' => $code->getCode(),
+                'gainName' => $code->getGain()?->getName(),
+                'gainId' => $code->getGain()?->getId(),
+                'validatedOn' => $code->getValidatedOn()?->format('Y-m-d'),
+                'isClaimed' => $code->isClaimed(),
+                'claimedOn' => $code->getClaimedOn()?->format('Y-m-d'),
+            ];
+        }, $validatedCodes);
+
         if (!$user) {
             return $this->json(['error' => 'User not authenticated'], 401);
         }
@@ -48,7 +73,8 @@ class UserController extends AbstractController
             'newsletter' => $user->getNewsletter(),
             'roles' => $user->getRoles(),
             'isVerified' => $user->isVerified(),
-            'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0
+            'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0,
+            'gains' => $gains,
         ]);
     }
 
