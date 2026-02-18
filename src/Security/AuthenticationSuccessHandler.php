@@ -12,7 +12,11 @@ use Symfony\Component\Security\Http\Authentication\AuthenticationSuccessHandlerI
 
 class AuthenticationSuccessHandler implements AuthenticationSuccessHandlerInterface
 {
-    public function __construct(private TokenService $tokenService) {}
+    public function __construct(
+        private TokenService $tokenService,
+        private int $jwtTtl,
+        private int $refreshTokenTtl
+    ) {}
 
     public function onAuthenticationSuccess(Request $request, TokenInterface $token): Response
     {
@@ -28,39 +32,22 @@ class AuthenticationSuccessHandler implements AuthenticationSuccessHandlerInterf
         $response->headers->setCookie(
             Cookie::create('access_token')
                 ->withValue($accessToken)
-                ->withExpires(time() + 900)  // 15 minutes
+                ->withExpires(time() + $this->jwtTtl)  // 15 minutes
                 ->withPath('/')
                 ->withDomain($_ENV['SESSION_COOKIE_DOMAIN'] ?? null)
                 ->withSecure($_ENV['SESSION_COOKIE_SECURE'] === 'true')
-                ->withHttpOnly(true)  // protection XSS
+                ->withHttpOnly()  // protection XSS
                 ->withSameSite(Cookie::SAMESITE_LAX)
         );
 
         $response->headers->setCookie(
             Cookie::create('refresh_token')
                 ->withValue($refreshToken->getToken())
-                ->withExpires(time() + 30 * 24 * 60 * 60)  // 30 jours
+                ->withExpires(time() + $this->refreshTokenTtl)  // 30 jours
                 ->withPath('/')
                 ->withDomain($_ENV['SESSION_COOKIE_DOMAIN'] ?? null)
                 ->withSecure($_ENV['SESSION_COOKIE_SECURE'] === 'true')
-                ->withHttpOnly(true)
-                ->withSameSite(Cookie::SAMESITE_LAX)
-        );
-
-        $response->headers->setCookie(
-            Cookie::create('user_data')
-                ->withValue(json_encode([
-                    'id' => $user->getId(),
-                    'email' => $user->getEmail(),
-                    'firstName' => $user->getFirstName(),
-                    'lastName' => $user->getLastName(),
-                    'roles' => $user->getRoles()
-                ]))
-                ->withExpires(time() + 30 * 24 * 60 * 60)
-                ->withPath('/')
-                ->withDomain($_ENV['SESSION_COOKIE_DOMAIN'] ?? null)
-                ->withSecure($_ENV['SESSION_COOKIE_SECURE'] === 'true')
-                ->withHttpOnly(true)
+                ->withHttpOnly()
                 ->withSameSite(Cookie::SAMESITE_LAX)
         );
 

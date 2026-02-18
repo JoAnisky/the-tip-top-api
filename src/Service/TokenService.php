@@ -11,7 +11,8 @@ class TokenService
 {
     public function __construct(
         private readonly JWTTokenManagerInterface $jwtManager,
-        private readonly EntityManagerInterface $entityManager
+        private readonly EntityManagerInterface $entityManager,
+        private readonly int $refreshTokenTtl
     )
     {}
 
@@ -20,11 +21,16 @@ class TokenService
         return $this->jwtManager->create($user);
     }
 
+    /**
+     * @throws \Exception
+     */
     public function createRefreshToken(User $user): RefreshToken
     {
         $refreshToken = new RefreshToken();
         $refreshToken->setUser($user);
-        $refreshToken->setExpiresAt(new \DateTimeImmutable('+30 days'));
+        $refreshToken->setExpiresAt(
+            new \DateTimeImmutable(sprintf('+%d seconds', $this->refreshTokenTtl))
+        );
 
         $this->entityManager->persist($refreshToken);
         $this->entityManager->flush();

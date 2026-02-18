@@ -19,7 +19,11 @@ use Symfony\Component\Validator\Validator\ValidatorInterface;
 final class AuthController extends AbstractController
 {
 
-    public function __construct(private TokenService $tokenService) {}
+    public function __construct(
+        private TokenService $tokenService,
+        private int $jwtTtl,  // injecté depuis la config
+        private int $refreshTokenTtl
+    ) {}
 
     /**
      * @throws Exception
@@ -108,18 +112,21 @@ final class AuthController extends AbstractController
         $newRefreshToken = $this->tokenService->rotateRefreshToken($refreshToken);
         $accessToken = $this->tokenService->createAccessToken($user);
 
-        $response = new JsonResponse([
-            'success' => true,
-            'accessToken' => $accessToken,
-            'user' => [
-                'id' => $user->getId(),
-                'email' => $user->getEmail(),
-                'firstName' => $user->getFirstName(),
-                'lastName' => $user->getLastName(),
-            ]
-        ]);
+        $response = new JsonResponse(['success' => true]);
 
+        // Les deux tokens en cookies HTTP-only
+        $response->headers->setCookie(
+            Cookie::create('access_token')
+                ->withValue($accessToken)
+                ->withExpires(time() + $this->jwtTtl)
+                ->withPath('/')
+                ->withDomain($_ENV['SESSION_COOKIE_DOMAIN'] ?? null)
+                ->withSecure($_ENV['SESSION_COOKIE_SECURE'] === 'true')
+                ->withHttpOnly(true)
+                ->withSameSite(Cookie::SAMESITE_LAX)
+        );
         $response->headers->setCookie($this->createCookie($newRefreshToken->getToken()));
+
         return $response;
     }
 
@@ -182,11 +189,11 @@ final class AuthController extends AbstractController
     {
         return Cookie::create('refresh_token')
             ->withValue($token)
-            ->withExpires(time() + 30 * 24 * 60 * 60)
+            ->withExpires(time() + $this->refreshTokenTtl)
             ->withPath('/')
             ->withDomain($_ENV['SESSION_COOKIE_DOMAIN'] ?? null)
             ->withSecure($_ENV['SESSION_COOKIE_SECURE'] === 'true')
-            ->withHttpOnly(true)
+            ->withHttpOnly()
             ->withSameSite(Cookie::SAMESITE_LAX);
     }
 }

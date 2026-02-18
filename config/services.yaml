@@ -4,7 +4,8 @@
 # Put parameters here that don't need to change on each machine where the app is deployed
 # https://symfony.com/doc/current/best_practices.html#use-parameters-for-application-configuration
 parameters:
-
+    app.jwt_ttl: '%lexik_jwt_authentication.token_ttl%'  # access_token : 15 minutes de validité
+    app.refresh_token_ttl: 2592000 # refresh_token : 30 Jours
 services:
     # default configuration for services in *this* file
     _defaults:
@@ -32,3 +33,17 @@ services:
             $cookieDomain: '%env(SESSION_COOKIE_DOMAIN)%'
             $cookieSecure: '%env(bool:SESSION_COOKIE_SECURE)%'
             $frontendUrl: '%env(FRONTEND_URL)%'
+
+    App\Security\AuthenticationSuccessHandler:
+        arguments:
+            $jwtTtl: '%app.jwt_ttl%'
+            $refreshTokenTtl: '%app.refresh_token_ttl%'
+
+    App\Controller\AuthController:
+        arguments:
+            $jwtTtl: '%app.jwt_ttl%'
+            $refreshTokenTtl: '%app.refresh_token_ttl%'
+
+    App\Service\TokenService:
+        arguments:
+            $refreshTokenTtl: '%app.refresh_token_ttl%'
