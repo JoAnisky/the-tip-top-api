@@ -27,7 +27,6 @@ class CodeAllocationService
 
         if ($gain && $gain->canAllocate()) {
             $code->setGain($gain);
-            $gain->incrementAllocatedQuantity();
             $this->em->persist($code);
 
             return $gain;

@@ -220,6 +220,8 @@ class Gain
 
     public function canAllocate(): bool
     {
-        return $this->allocatedQuantity < $this->maxQuantity;
+        // On peut allouer tant qu'il reste des codes disponibles
+        // Il faut compter combien de codes ont ce gain
+        return $this->codes->count() < $this->maxQuantity;
     }
 }

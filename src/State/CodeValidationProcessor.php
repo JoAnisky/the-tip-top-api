@@ -10,8 +10,6 @@ use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 use Symfony\Component\HttpKernel\Exception\BadRequestHttpException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
-use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Symfony\Component\HttpKernel\Exception\TooManyRequestsHttpException;
 use Symfony\Component\RateLimiter\RateLimiterFactory;
 
@@ -50,6 +48,10 @@ readonly class CodeValidationProcessor implements ProcessorInterface
             // On renvoie exactement la même erreur HTTP (400) et le même message : éviter l'énumération de données.
             throw new BadRequestHttpException('Le code saisi est invalide ou a déjà été utilisé.');
         }
+
+        // Changer le nombre de lots attribués
+        $gain = $code->getGain();
+        $gain->setAllocatedQuantity($gain->getAllocatedQuantity() + 1);
 
         // Attribution
         $code->setIsValidated(true);
