@@ -16,20 +16,21 @@ class CodeRepository extends ServiceEntityRepository
         parent::__construct($registry, Code::class);
     }
 
-    //    /**
-    //     * @return Code[] Returns an array of Code objects
-    //     */
-    //    public function findByExampleField($value): array
-    //    {
-    //        return $this->createQueryBuilder('c')
-    //            ->andWhere('c.exampleField = :val')
-    //            ->setParameter('val', $value)
-    //            ->orderBy('c.id', 'ASC')
-    //            ->setMaxResults(10)
-    //            ->getQuery()
-    //            ->getResult()
-    //        ;
-    //    }
+        /**
+         * @return Code[] Returns an array of Code objects
+         */
+        public function getValidatedCodes($user): array
+        {
+            return $this->createQueryBuilder('c')
+                ->leftJoin('c.gain', 'g')
+                ->addSelect('g')
+                ->where('c.winner = :user')
+                ->andWhere('c.isValidated = true')
+                ->setParameter('user', $user)
+                ->orderBy('c.validatedOn', 'DESC')
+                ->getQuery()
+                ->getResult();
+        }
 
     //    public function findOneBySomeField($value): ?Code
     //    {

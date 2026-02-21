@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Code;
 use App\Entity\User;
 use App\Enum\Gender;
+use App\Repository\CodeRepository;
 use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -28,22 +29,16 @@ class UserController extends AbstractController
     ) {}
     #[Route('/me', name: 'api_users_me', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function getCurrentUser(): JsonResponse
+    public function getCurrentUser(CodeRepository $codeRepository): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
 
-        $validatedCodes = $this->em
-            ->getRepository(Code::class)
-            ->createQueryBuilder('c')
-            ->leftJoin('c.gain', 'g')
-            ->addSelect('g')
-            ->where('c.winner = :user')
-            ->andWhere('c.isValidated = true')
-            ->setParameter('user', $user)
-            ->orderBy('c.validatedOn', 'DESC')
-            ->getQuery()
-            ->getResult();
+        if (!$user) {
+            return $this->json(['error' => 'User not authenticated'], 401);
+        }
+
+        $validatedCodes = $codeRepository->getValidatedCodes($user);
 
         $gains = array_map(function(Code $code) {
             return [
@@ -56,10 +51,6 @@ class UserController extends AbstractController
                 'claimedOn' => $code->getClaimedOn()?->format('Y-m-d'),
             ];
         }, $validatedCodes);
-
-        if (!$user) {
-            return $this->json(['error' => 'User not authenticated'], 401);
-        }
 
         return $this->json([
             'id' => $user->getId(),
@@ -84,7 +75,7 @@ class UserController extends AbstractController
      */
     #[Route('/me', name: 'api_users_update', methods: ['PATCH'])]
     #[IsGranted('ROLE_USER')]
-    public function updateProfile(Request $request): JsonResponse
+    public function updateProfile(Request $request, UserRepository $userRepository): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -113,8 +104,7 @@ class UserController extends AbstractController
         }
 
         if (isset($data['email'])) {
-            $existingUser = $this->em->getRepository(User::class)
-                ->findOneBy(['email' => $data['email']]);
+            $existingUser = $userRepository->findOneBy(['email' => $data['email']]);
 
             if ($existingUser && $existingUser->getId() !== $user->getId()) {
                 return $this->json(
