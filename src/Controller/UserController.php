@@ -5,6 +5,7 @@ namespace App\Controller;
 use App\Entity\Code;
 use App\Entity\User;
 use App\Enum\Gender;
+use App\Repository\UserRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
@@ -213,5 +214,25 @@ class UserController extends AbstractController
         $response->headers->setCookie($userDataCookie);
 
         return $response;
+    }
+
+    #[Route('/customers', name: 'api_customers_search', methods: ['GET'])]
+    #[IsGranted('ROLE_EMPLOYEE')]
+    public function getCustomers(Request $request, UserRepository $userRepository): JsonResponse
+    {
+        $search = trim($request->query->get('search', ''));
+
+        if(strlen($search) < 2){
+            return $this->json([]);
+        }
+
+        $users = $userRepository->searchCustomers($search);
+
+        return $this->json(array_map(fn(User $u) => [
+            'id'        => $u->getId(),
+            'firstName' => $u->getFirstName(),
+            'lastName'  => $u->getLastName(),
+            'email'     => $u->getEmail(),
+        ], $users));
     }
 }
