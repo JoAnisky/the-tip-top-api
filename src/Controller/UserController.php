@@ -38,20 +38,6 @@ class UserController extends AbstractController
             return $this->json(['error' => 'User not authenticated'], 401);
         }
 
-        $validatedCodes = $codeRepository->getValidatedCodes($user);
-
-        $gains = array_map(function(Code $code) {
-            return [
-                'id' => $code->getId(),
-                'code' => $code->getCode(),
-                'gainName' => $code->getGain()?->getName(),
-                'gainId' => $code->getGain()?->getId(),
-                'validatedOn' => $code->getValidatedOn()?->format('Y-m-d'),
-                'isClaimed' => $code->isClaimed(),
-                'claimedOn' => $code->getClaimedOn()?->format('Y-m-d'),
-            ];
-        }, $validatedCodes);
-
         return $this->json([
             'id' => $user->getId(),
             'email' => $user->getEmail(),
@@ -66,7 +52,7 @@ class UserController extends AbstractController
             'roles' => $user->getRoles(),
             'isVerified' => $user->isVerified(),
             'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0,
-            'gains' => $gains,
+            'gains' => $this->resolveGains($user, $codeRepository),
         ]);
     }
 
@@ -224,5 +210,27 @@ class UserController extends AbstractController
             'lastName'  => $u->getLastName(),
             'email'     => $u->getEmail(),
         ], $users));
+    }
+
+    /**
+     * Returne les gains uniquement pour ROLE_PARTICIPANT
+     * @param User $user
+     * @param CodeRepository $codeRepository
+     * @return array
+     */
+    private function resolveGains(User $user, CodeRepository $codeRepository): array
+    {
+        if ($this->isGranted('ROLE_EMPLOYEE') || $this->isGranted('ROLE_ADMIN')) {
+            return [];
+        }
+        return array_map(fn(Code $code) => [
+            'id'          => $code->getId(),
+            'code'        => $code->getCode(),
+            'gainName'    => $code->getGain()?->getName(),
+            'gainId'      => $code->getGain()?->getId(),
+            'validatedOn' => $code->getValidatedOn()?->format('Y-m-d'),
+            'isClaimed'   => $code->isClaimed(),
+            'claimedOn'   => $code->getClaimedOn()?->format('Y-m-d'),
+        ], $codeRepository->getValidatedCodes($user));
     }
 }
