@@ -25,11 +25,13 @@ class UserController extends AbstractController
     public function __construct(
         private EntityManagerInterface $em,
         private UserPasswordHasherInterface $passwordHasher,
-        private ValidatorInterface $validator
+        private ValidatorInterface $validator,
+        private UserRepository $userRepository,
+        private CodeRepository $codeRepository,
     ) {}
     #[Route('/me', name: 'api_users_me', methods: ['GET'])]
     #[IsGranted('ROLE_USER')]
-    public function getCurrentUser(CodeRepository $codeRepository): JsonResponse
+    public function getCurrentUser(): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -52,16 +54,20 @@ class UserController extends AbstractController
             'roles' => $user->getRoles(),
             'isVerified' => $user->isVerified(),
             'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0,
-            'gains' => $this->resolveGains($user, $codeRepository),
+            'gains' => $this->resolveGains($user, $this->codeRepository),
         ]);
     }
 
+
     /**
+     * Update user profile
+     * @param Request $request
+     * @return JsonResponse
      * @throws \Exception
      */
     #[Route('/me', name: 'api_users_update', methods: ['PATCH'])]
     #[IsGranted('ROLE_USER')]
-    public function updateProfile(Request $request, UserRepository $userRepository): JsonResponse
+    public function updateProfile(Request $request): JsonResponse
     {
         /** @var User $user */
         $user = $this->getUser();
@@ -90,7 +96,7 @@ class UserController extends AbstractController
         }
 
         if (isset($data['email'])) {
-            $existingUser = $userRepository->findOneBy(['email' => $data['email']]);
+            $existingUser = $this->userRepository->findOneBy(['email' => $data['email']]);
 
             if ($existingUser && $existingUser->getId() !== $user->getId()) {
                 return $this->json(
@@ -194,7 +200,7 @@ class UserController extends AbstractController
 
     #[Route('/customers', name: 'api_customers_search', methods: ['GET'])]
     #[IsGranted('ROLE_EMPLOYEE')]
-    public function getCustomers(Request $request, UserRepository $userRepository): JsonResponse
+    public function getCustomers(Request $request): JsonResponse
     {
         $search = trim($request->query->get('search', ''));
 
@@ -202,7 +208,7 @@ class UserController extends AbstractController
             return $this->json([]);
         }
 
-        $users = $userRepository->searchCustomers($search);
+        $users = $this->userRepository->searchCustomers($search);
 
         return $this->json(array_map(fn(User $u) => [
             'id'        => $u->getId(),
@@ -212,13 +218,30 @@ class UserController extends AbstractController
         ], $users));
     }
 
+    #[Route('/{id}/codes', name: 'api_customers_codes', methods: ['GET'])]
+    #[IsGranted('ROLE_EMPLOYEE')]
+    public function getCustomerCodes(User $user): JsonResponse
+    {
+        $codes = $this->codeRepository->getValidatedCodes($user);
+
+        return $this->json(array_map(fn(Code $code) => [
+            'id'        => $code->getId(),
+            'code'       => $code->getCode(),
+            'gainName'    => $code->getGain()?->getName(),
+            'gainId'      => $code->getGain()?->getId(),
+            'validatedOn' => $code->getValidatedOn()?->format('d-m-Y'),
+            'isClaimed'   => $code->isClaimed(),
+            'claimedOn'   => $code->getClaimedOn()?->format('d-m-Y'),
+            'expiresAt'   => $code->getExpiresAt()?->format('d-m-Y'),
+        ], $codes));
+    }
+
     /**
-     * Returne les gains uniquement pour ROLE_PARTICIPANT
+     * Retourne les gains uniquement pour ROLE_PARTICIPANT
      * @param User $user
-     * @param CodeRepository $codeRepository
      * @return array
      */
-    private function resolveGains(User $user, CodeRepository $codeRepository): array
+    private function resolveGains(User $user): array
     {
         if ($this->isGranted('ROLE_EMPLOYEE') || $this->isGranted('ROLE_ADMIN')) {
             return [];
@@ -231,6 +254,6 @@ class UserController extends AbstractController
             'validatedOn' => $code->getValidatedOn()?->format('Y-m-d'),
             'isClaimed'   => $code->isClaimed(),
             'claimedOn'   => $code->getClaimedOn()?->format('Y-m-d'),
-        ], $codeRepository->getValidatedCodes($user));
+        ], $this->codeRepository->getValidatedCodes($user));
     }
 }
