@@ -157,12 +157,16 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     #[ORM\Column(type: 'boolean')]
     private ?bool $isVerified = false;
 
+    #[ORM\OneToMany(targetEntity: Code::class, mappedBy: 'winner')]
+    private Collection $wonCodes;
+
     public function __construct()
     {
         $this->tickets = new ArrayCollection();
         $this->socialAccounts = new ArrayCollection();
         $this->registeredIn = new \DateTimeImmutable();
         $this->refreshTokens = new ArrayCollection();
+        $this->wonCodes = new ArrayCollection();
     }
 
     public function getId(): ?int
@@ -514,6 +518,25 @@ class User implements UserInterface, PasswordAuthenticatedUserInterface
     {
         $this->isVerified = $isVerified;
 
+        return $this;
+    }
+
+    public function addWonCode(Code $code): static
+    {
+        if (!$this->wonCodes->contains($code)) {
+            $this->wonCodes->add($code);
+            $code->setWinner($this);
+        }
+        return $this;
+    }
+
+    public function removeWonCode(Code $code): static
+    {
+        if ($this->wonCodes->removeElement($code)) {
+            if ($code->getWinner() === $this) {
+                $code->setWinner(null);
+            }
+        }
         return $this;
     }
 }

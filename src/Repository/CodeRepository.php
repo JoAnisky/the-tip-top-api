@@ -35,13 +35,17 @@ class CodeRepository extends ServiceEntityRepository
 
     public function getTicketStats(): array
     {
-        $total = $this->count([]);
-        $validated = $this->count(['isValidated' => true]);
+        $total     = $this->count([]);                        // tickets fournis
+        $validated = $this->count(['isValidated' => true]);   // tickets utilisés (= lots gagnés)
+        $claimed   = $this->count(['isClaimed'   => true]);   // lots remis physiquement
 
         return [
-            'total'             => $total,
-            'validated'         => $validated,
+            'total'              => $total,
+            'used'               => $validated,
+            'won'                => $validated,   // même valeur, deux labels différents côté front
+            'claimed'            => $claimed,
             'participation_rate' => $total > 0 ? round($validated / $total * 100, 1) : 0,
+            'claim_rate'         => $validated > 0 ? round($claimed / $validated * 100, 1) : 0,
         ];
     }
 
@@ -57,15 +61,4 @@ class CodeRepository extends ServiceEntityRepository
             ->getArrayResult();
     }
 
-    public function getClaimStats(): array
-    {
-        $won    = $this->count(['isValidated' => true]);
-        $claimed = $this->count(['isClaimed' => true]);
-
-        return [
-            'won'          => $won,
-            'claimed'      => $claimed,
-            'claim_rate'   => $won > 0 ? round($claimed / $won * 100, 1) : 0,
-        ];
-    }
 }

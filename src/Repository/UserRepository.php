@@ -43,21 +43,55 @@ class UserRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-    public function getWinnersGenderStats(): array
+    public function getWinnersStats(): array
     {
-        $rows = $this->createQueryBuilder('u')
+        // Répartition par genre
+        $genderRows = $this->createQueryBuilder('u')
             ->select('u.gender AS gender, COUNT(u.id) AS total')
-            ->join('u.tickets', 't')
-            ->join('t.code', 'c')
+            ->join('u.wonCodes', 'c')
             ->where('c.isValidated = true')
             ->groupBy('u.gender')
             ->getQuery()
             ->getArrayResult();
 
-        // Normalise les valeurs de l'enum en string lisible
-        return array_map(fn($row) => [
-            'gender' => $row['gender'] instanceof \BackedEnum ? $row['gender']->value : $row['gender'],
-            'total'  => (int) $row['total'],
-        ], $rows);
+        // Tranches d'âge
+        $ageRows = $this->createQueryBuilder('u')
+            ->select('u.birthDate AS birthDate')
+            ->join('u.wonCodes', 'c')
+            ->where('c.isValidated = true')
+            ->andWhere('u.birthDate IS NOT NULL')
+            ->getQuery()
+            ->getArrayResult();
+
+        return [
+            'gender'     => array_map(fn($r) => [
+                'gender' => $r['gender'] instanceof \BackedEnum ? $r['gender']->value : ($r['gender'] ?? 'non renseigné'),
+                'total'  => (int) $r['total'],
+            ], $genderRows),
+            'age_groups' => $this->buildAgeGroups($ageRows),
+        ];
+    }
+
+    private function buildAgeGroups(array $rows): array
+    {
+        $groups = ['<18' => 0, '18-24' => 0, '25-34' => 0, '35-49' => 0, '50+' => 0];
+        $now = new \DateTimeImmutable();
+
+        foreach ($rows as $row) {
+            $age = $row['birthDate']->diff($now)->y;
+            $groups[match(true) {
+                $age < 18  => '<18',
+                $age <= 24 => '18-24',
+                $age <= 34 => '25-34',
+                $age <= 49 => '35-49',
+                default    => '50+',
+            }]++;
+        }
+
+        return array_map(
+            fn($label, $total) => ['label' => $label, 'total' => $total],
+            array_keys($groups),
+            $groups
+        );
     }
 }
