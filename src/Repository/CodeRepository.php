@@ -27,7 +27,8 @@ class CodeRepository extends ServiceEntityRepository
                 ->where('c.winner = :user')
                 ->andWhere('c.isValidated = true')
                 ->setParameter('user', $user)
-                ->orderBy('c.validatedOn', 'DESC')
+                ->orderBy('c.isClaimed', 'ASC')   // false (0) en premier = non remis en haut
+                ->addOrderBy('c.validatedOn', 'DESC')
                 ->getQuery()
                 ->getResult();
         }
