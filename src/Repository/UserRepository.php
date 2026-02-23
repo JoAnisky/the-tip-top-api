@@ -43,13 +43,21 @@ class UserRepository extends ServiceEntityRepository
             ->getResult();
     }
 
-//    public function findOneBySomeField($value): ?User
-//    {
-//        return $this->createQueryBuilder('u')
-//            ->andWhere('u.exampleField = :val')
-//            ->setParameter('val', $value)
-//            ->getQuery()
-//            ->getOneOrNullResult()
-//        ;
-//    }
+    public function getWinnersGenderStats(): array
+    {
+        $rows = $this->createQueryBuilder('u')
+            ->select('u.gender AS gender, COUNT(u.id) AS total')
+            ->join('u.tickets', 't')
+            ->join('t.code', 'c')
+            ->where('c.isValidated = true')
+            ->groupBy('u.gender')
+            ->getQuery()
+            ->getArrayResult();
+
+        // Normalise les valeurs de l'enum en string lisible
+        return array_map(fn($row) => [
+            'gender' => $row['gender'] instanceof \BackedEnum ? $row['gender']->value : $row['gender'],
+            'total'  => (int) $row['total'],
+        ], $rows);
+    }
 }
