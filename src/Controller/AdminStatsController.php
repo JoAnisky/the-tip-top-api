@@ -25,8 +25,7 @@ class AdminStatsController extends AbstractController
         return $this->json([
             'tickets'  => $this->codeRepository->getTicketStats(),
             'gains'    => $this->codeRepository->getGainStats(),
-            'claiming' => $this->codeRepository->getClaimStats(),
-            'winners'  => $this->userRepository->getWinnersGenderStats(),
+            'winners'  => $this->userRepository->getWinnersStats(),
         ]);
     }
 }
