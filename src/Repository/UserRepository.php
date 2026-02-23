@@ -47,7 +47,7 @@ class UserRepository extends ServiceEntityRepository
     {
         // Répartition par genre
         $genderRows = $this->createQueryBuilder('u')
-            ->select('u.gender AS gender, COUNT(u.id) AS total')
+            ->select('u.gender AS gender, COUNT(DISTINCT u.id) AS total')
             ->join('u.wonCodes', 'c')
             ->where('c.isValidated = true')
             ->groupBy('u.gender')
@@ -60,6 +60,7 @@ class UserRepository extends ServiceEntityRepository
             ->join('u.wonCodes', 'c')
             ->where('c.isValidated = true')
             ->andWhere('u.birthDate IS NOT NULL')
+            ->groupBy('u.id')
             ->getQuery()
             ->getArrayResult();
 

@@ -44,7 +44,7 @@ class CodeRepository extends ServiceEntityRepository
             'used'               => $validated,
             'won'                => $validated,   // même valeur, deux labels différents côté front
             'claimed'            => $claimed,
-            'participation_rate' => $total > 0 ? round($validated / $total * 100, 1) : 0,
+            'participation_rate' => $total > 0 ? round($validated / $total * 100, 4) : 0,
             'claim_rate'         => $validated > 0 ? round($claimed / $validated * 100, 1) : 0,
         ];
     }
