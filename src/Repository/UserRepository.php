@@ -118,7 +118,7 @@ class UserRepository extends ServiceEntityRepository
 
         // Utilisateurs avec au moins un lot gagné mais pas encore récupéré
         if($filter === 'unclaimed') {
-            $qb->join('u.wonCodes', 'u')
+            $qb->join('u.wonCodes', 'c')
                 ->andWhere('c.isValidated = true')
                 ->andWhere('c.isClaimed = true')
                 ->groupBy('u.id');
