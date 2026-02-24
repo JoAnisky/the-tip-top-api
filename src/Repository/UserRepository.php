@@ -95,4 +95,35 @@ class UserRepository extends ServiceEntityRepository
             $groups
         );
     }
+
+    /**
+     * Requête pour export des données utilisateurs
+     * @param string $filter
+     * @return array
+     */
+    public function findForExport(string $filter = 'all'): array
+    {
+        $qb = $this->createQueryBuilder('u')
+        ->select('u.email, u.firstName, u.lastName, u.newsletter')
+            ->where('u.roles NOT LIKE :employee')
+            ->andWhere("u.roles NOT LIKE :admin")
+            ->setParameter('employee', '%ROLE_EMPLOYEE%')
+            ->setParameter('admin', '%ROLE_ADMIN%')
+            ->orderBy('u.lastName', 'ASC');
+
+        // On retourne uniquement les users ayant accepté les emails marketing
+        if($filter === 'newsletter') {
+            $qb->andWhere('u.newsletter = true');
+        }
+
+        // Utilisateurs avec au moins un lot gagné mais pas encore récupéré
+        if($filter === 'unclaimed') {
+            $qb->join('u.wonCodes', 'u')
+                ->andWhere('c.isValidated = true')
+                ->andWhere('c.isClaimed = true')
+                ->groupBy('u.id');
+        }
+        // retourne le tableau de données brutes
+        return $qb->getQuery()->getArrayResult();
+    }
 }

@@ -256,4 +256,30 @@ class UserController extends AbstractController
             'claimedOn'   => $code->getClaimedOn()?->format('Y-m-d'),
         ], $this->codeRepository->getValidatedCodes($user));
     }
+
+    #[Route('/export', name: 'admin_users_export', methods: ['GET'])]
+    public function exportUsers(Request $request): Response
+    {
+        $filter = $request->query->getString('filter', 'all');
+        $users = $this->userRepository->findForExport($filter);
+
+        // Construction manuelle du CSV
+        $csv = "Email,Prénom,Nom,Newsletter\n";
+
+        foreach ($users as $user) {
+            $csv .= sprintf(
+                "%s,%s,%s,%s\n",
+                $user['email'],
+                $user['firstName'] ?? '',
+                $user['lastName'] ?? '',
+                $user['newsletter'] ? 'oui' : 'non',
+            );
+        }
+
+        // Headers HTTP pour déclencher le téléchargement côté navigateur
+        return new Response($csv, 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename=export-' . $filter . '-' . date('d-m-Y') . '.csv',
+        ]);
+    }
 }
