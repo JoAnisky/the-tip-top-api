@@ -53,7 +53,14 @@ class UserController extends AbstractController
             'newsletter' => $user->getNewsletter(),
             'roles' => $user->getRoles(),
             'isVerified' => $user->isVerified(),
-            'hasOAuthAccounts' => $user->getSocialAccounts()->count() > 0,
+            'oAuthAccounts' => [
+                'google'   => $user->getSocialAccounts()->exists(
+                    fn($key, $account) => $account->getProviderName() === 'google'
+                ),
+                'facebook' => $user->getSocialAccounts()->exists(
+                    fn($key, $account) => $account->getProviderName() === 'facebook'
+                ),
+            ],
             'gains' => $this->resolveGains($user, $this->codeRepository),
         ]);
     }
