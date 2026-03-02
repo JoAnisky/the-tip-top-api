@@ -91,6 +91,47 @@ pipeline {
                 }
             }
         }
+        stage('Deploy Monitoring Stack') {
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
+            steps {
+                script {
+                    withCredentials([
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
+                        string(credentialsId: 'GRAFANA_ADMIN_PASSWORD', variable: 'GRAFANA_PASS')
+                        string(credentialsId: 'GRAFANA_ADMIN_USER', variable: 'GRAFANA_USER')
+                    ]) {
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG_FILE
+
+                            # Namespace monitoring
+                            kubectl apply -f k8s/monitoring/namespace.yaml
+
+                            # Secret Grafana
+                            kubectl create secret generic grafana-admin-secret \
+                                --from-literal=admin-user=={GRAFANA_USER} \
+                                --from-literal=admin-password=${GRAFANA_PASS} \
+                                --namespace monitoring \
+                                --dry-run=client -o yaml | kubectl apply -f -
+
+                            # Helm repo
+                            helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                            helm repo update
+
+                            # Install / upgrade kube-prometheus-stack
+                            helm upgrade --install kube-prometheus-stack \
+                                prometheus-community/kube-prometheus-stack \
+                                --namespace monitoring \
+                                --values k8s/monitoring/helm-values.yaml \
+                                --wait \
+                                --timeout 5m
+
+                            # Ingress Grafana
+                            kubectl apply -f k8s/monitoring/ingress-grafana.yaml
+                        '''
+                    }
+                }
+            }
+        }
         stage('Deploy to Kubernetes') {
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
