@@ -26,6 +26,11 @@ spec:
                             secretKeyRef:
                                 name: the-tip-top-secret-mailer
                                 key: MAILER_DSN
+                      - name: MAILER_FROM
+                        valueFrom:
+                            secretKeyRef:
+                                name: the-tip-top-secret-mailer
+                                key: CONTACT_EMAIL
                   envFrom:
                       # Variables depuis ConfigMap (non sensibles)
                       - configMapRef:

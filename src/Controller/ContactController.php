@@ -39,8 +39,8 @@ class ContactController extends AbstractController
         ];
 
         $email = (new Email())
-            ->from($dto->email)
-            ->to('contact@jonathanlore.fr')
+            ->from($this->getParameter('app.mailer_from'))
+            ->to($this->getParameter('app.mailer_from'))
             ->replyTo($dto->email)
             ->subject('[Thé Tip Top] ' . ($subjectLabels[$dto->subject] ?? $dto->subject))
             ->text(sprintf(

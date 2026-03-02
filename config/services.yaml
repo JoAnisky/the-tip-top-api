@@ -6,6 +6,7 @@
 parameters:
     app.jwt_ttl: '%lexik_jwt_authentication.token_ttl%'  # access_token : 15 minutes de validité
     app.refresh_token_ttl: 2592000 # refresh_token : 30 Jours
+    app.mailer_from: '%env(MAILER_FROM)%'
 services:
     # default configuration for services in *this* file
     _defaults:
