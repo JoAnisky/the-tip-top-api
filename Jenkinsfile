@@ -182,6 +182,10 @@ pipeline {
                             kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
                                 php bin/console doctrine:schema:update --force --env=prod || true
 
+                            # Forcer la suppression du cache avant cache:clear
+                            kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
+                                rm -rf /var/www/html/var/cache/prod || true
+
                             # Cache clear
                             kubectl exec deployment/${KUBE_DEPLOYMENT} -n ${KUBE_NAMESPACE} -- \
                                 php bin/console cache:clear --env=prod
