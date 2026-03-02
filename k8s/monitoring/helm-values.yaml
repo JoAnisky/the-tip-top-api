@@ -1,0 +1,25 @@
+grafana:
+    admin:
+        existingSecret: grafana-admin-secret
+        userKey: admin-user
+        passwordKey: admin-password
+    ingress:
+        enabled: false
+
+prometheus:
+    prometheusSpec:
+        # Découverte cross-namespace (surveille the-tip-top-api)
+        podMonitorNamespaceSelector: { }
+        serviceMonitorNamespaceSelector: { }
+        podMonitorSelector: { }
+        serviceMonitorSelector: { }
+
+alertManager:
+    enabled: true
+
+nodeExporter:
+    enabled: true # métriques infra nœud
+
+kubeStateMetrics:
+    enabled: true  # métriques Kubernetes (pods, deployments...)
+
