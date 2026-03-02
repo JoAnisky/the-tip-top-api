@@ -20,7 +20,12 @@ spec:
                   ports:
                       - containerPort: 80
                         name: http
-
+                  env:
+                      - name: MAILER_DSN
+                        valueFrom:
+                            secretKeyRef:
+                                name: the-tip-top-secret-mailer
+                                key: MAILER_DSN
                   envFrom:
                       # Variables depuis ConfigMap (non sensibles)
                       - configMapRef:
