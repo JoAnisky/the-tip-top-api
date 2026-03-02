@@ -97,7 +97,7 @@ pipeline {
                 script {
                     withCredentials([
                         file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
-                        string(credentialsId: 'GRAFANA_ADMIN_PASSWORD', variable: 'GRAFANA_PASS')
+                        string(credentialsId: 'GRAFANA_ADMIN_PASSWORD', variable: 'GRAFANA_PASS'),
                         string(credentialsId: 'GRAFANA_ADMIN_USER', variable: 'GRAFANA_USER')
                     ]) {
                         sh '''
