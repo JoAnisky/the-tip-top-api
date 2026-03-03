@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    name: mysqld-exporter
+    namespace: the-tip-top-api
+spec:
+    replicas: 1
+    selector:
+        matchLabels:
+            app: mysqld-exporter
+    template:
+        metadata:
+            labels:
+                app: mysqld-exporter
+        spec:
+            containers:
+                - name: mysqld-exporter
+                  image: prom/mysqld-exporter:v0.15.1
+                  ports:
+                      - containerPort: 9104
+                        name: metrics
+                  env:
+                      - name: DATA_SOURCE_NAME
+                        valueFrom:
+                            secretKeyRef:
+                                name: mysqld-exporter-secret
+                                key: DATA_SOURCE_NAME
+                  resources:
+                      requests:
+                          memory: "32Mi"
+                          cpu: "50m"
+                      limits:
+                          memory: "64Mi"
+                          cpu: "100m"
+                  livenessProbe:
+                      httpGet:
+                          path: /
+                          port: 9104
+                      initialDelaySeconds: 10
+                      periodSeconds: 20
