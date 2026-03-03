@@ -91,41 +91,18 @@ pipeline {
                 }
             }
         }
-        stage('Deploy Monitoring Stack') {
+        stage('Deploy PodMonitor') {
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 script {
                     withCredentials([
-                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
-                        string(credentialsId: 'GRAFANA_ADMIN_PASSWORD', variable: 'GRAFANA_PASS'),
-                        string(credentialsId: 'GRAFANA_ADMIN_USER', variable: 'GRAFANA_USER')
+                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
                     ]) {
-                        sh """
-                                export KUBECONFIG=\$KUBECONFIG_FILE
-
-                                # Manifests Kubernetes
-                                kubectl apply -f k8s/monitoring/
-
-                                # Secret Grafana
-                                kubectl create secret generic grafana-admin-secret \
-                                   --from-literal=admin-user=\${GRAFANA_USER} \
-                                   --from-literal=admin-password=\${GRAFANA_PASS} \
-                                   --namespace monitoring \
-                                   --dry-run=client -o yaml | kubectl apply -f -
-
-                                # Helm (installe prometheus)
-                                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                                helm repo update
-
-                                helm upgrade --install kube-prometheus-stack \
-                                   prometheus-community/kube-prometheus-stack \
-                                   --namespace monitoring \
-                                   --values k8s/monitoring/helm-values.yaml \
-                                   --set grafana.adminPassword=\${GRAFANA_PASS} \
-                                   --wait \
-                                   --timeout 5m
-                            """
-                        }
+                        sh '''
+                            export KUBECONFIG=$KUBECONFIG_FILE
+                            kubectl apply -f k8s/monitoring/podmonitor-symfony.yaml
+                        '''
+                    }
                 }
             }
         }
