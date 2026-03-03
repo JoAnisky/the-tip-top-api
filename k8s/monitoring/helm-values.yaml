@@ -1,10 +1,8 @@
 grafana:
     adminUser: ""
     adminPassword: ""
-    admin:
-        existingSecret: grafana-admin-secret
-        userKey: admin-user
-        passwordKey: admin-password
+    envFromSecret: "grafana-admin-secret"
+
     ingress:
         enabled: false
 
@@ -16,7 +14,7 @@ prometheus:
         podMonitorSelector: { }
         serviceMonitorSelector: { }
 
-alertManager:
+alertmanager:
     enabled: true
 
 nodeExporter:
