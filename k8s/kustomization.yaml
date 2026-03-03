@@ -6,3 +6,4 @@ resources:
     - api/
     - database/
     - phpmyadmin/
+    - mysqld-exporter
