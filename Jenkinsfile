@@ -100,13 +100,13 @@ pipeline {
                 ]) {
                     // guillemets doubles : Jenkins interpole EXPORTER_PASS
                     // \$ : échappe les variables shell pour ne pas être lues par Groovy
-                    sh """
-                        export KUBECONFIG=\$KUBECONFIG_FILE
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
                         kubectl create secret generic mysqld-exporter-secret \
-                            --from-literal=DATA_SOURCE_NAME=exporter:\${EXPORTER_PASS}@tcp\(mariadb:3306\)/ \
-                            -n ${KUBE_NAMESPACE} \
+                            --from-literal=DATA_SOURCE_NAME="exporter:$EXPORTER_PASS@tcp(mariadb:3306)/" \
+                            -n the-tip-top-api \
                             --dry-run=client -o yaml | kubectl apply -f -
-                    """
+                    '''
                 }
             }
         }
