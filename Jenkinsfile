@@ -91,18 +91,35 @@ pipeline {
                 }
             }
         }
-        stage('Deploy PodMonitor') {
+        stage('Deploy Mysqld Exporter Secret') {
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
-                script {
-                    withCredentials([
-                        file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
-                    ]) {
-                        sh '''
-                            export KUBECONFIG=$KUBECONFIG_FILE
-                            kubectl apply -f k8s/monitoring/podmonitor-symfony.yaml
-                        '''
-                    }
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
+                    string(credentialsId: 'MYSQLD_EXPORTER_PASSWORD', variable: 'EXPORTER_PASS')
+                ]) {
+                    // guillemets doubles : Jenkins interpole EXPORTER_PASS
+                    // \$ : échappe les variables shell pour ne pas être lues par Groovy
+                    sh """
+                        export KUBECONFIG=\$KUBECONFIG_FILE
+                        kubectl create secret generic mysqld-exporter-secret \
+                            --from-literal=DATA_SOURCE_NAME=exporter:\${EXPORTER_PASS}@tcp(mariadb:3306)/ \
+                            -n ${KUBE_NAMESPACE} \
+                            --dry-run=client -o yaml | kubectl apply -f -
+                    """
+                }
+            }
+        }
+        stage('Deploy PodMonitors') {
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
+                ]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
+                        kubectl apply -k k8s/monitoring/
+                    '''
                 }
             }
         }
