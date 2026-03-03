@@ -124,8 +124,6 @@ pipeline {
                                    --set grafana.adminPassword=\${GRAFANA_PASS} \
                                    --wait \
                                    --timeout 5m
-
-                                kubectl apply -f k8s/monitoring/ingress-grafana.yaml
                             """
                         }
                 }
