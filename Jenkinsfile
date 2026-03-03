@@ -103,7 +103,7 @@ pipeline {
                     sh """
                         export KUBECONFIG=\$KUBECONFIG_FILE
                         kubectl create secret generic mysqld-exporter-secret \
-                            --from-literal=DATA_SOURCE_NAME=exporter:\${EXPORTER_PASS}@tcp(mariadb:3306)/ \
+                            --from-literal=DATA_SOURCE_NAME='exporter:\${EXPORTER_PASS}@tcp(mariadb:3306)/' \
                             -n ${KUBE_NAMESPACE} \
                             --dry-run=client -o yaml | kubectl apply -f -
                     """
