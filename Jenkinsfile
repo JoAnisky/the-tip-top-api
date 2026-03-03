@@ -101,20 +101,23 @@ pipeline {
                         string(credentialsId: 'GRAFANA_ADMIN_USER', variable: 'GRAFANA_USER')
                     ]) {
                         sh """
-                               export KUBECONFIG=\$KUBECONFIG_FILE
+                                export KUBECONFIG=\$KUBECONFIG_FILE
 
-                               kubectl apply -f k8s/monitoring/namespace.yaml
+                                # Manifests Kubernetes
+                                kubectl apply -f k8s/monitoring/
 
-                               kubectl create secret generic grafana-admin-secret \
+                                # Secret Grafana
+                                kubectl create secret generic grafana-admin-secret \
                                    --from-literal=admin-user=\${GRAFANA_USER} \
                                    --from-literal=admin-password=\${GRAFANA_PASS} \
                                    --namespace monitoring \
                                    --dry-run=client -o yaml | kubectl apply -f -
 
-                               helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
-                               helm repo update
+                                # Helm (installe prometheus)
+                                helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+                                helm repo update
 
-                               helm upgrade --install kube-prometheus-stack \
+                                helm upgrade --install kube-prometheus-stack \
                                    prometheus-community/kube-prometheus-stack \
                                    --namespace monitoring \
                                    --values k8s/monitoring/helm-values.yaml \
@@ -122,9 +125,9 @@ pipeline {
                                    --wait \
                                    --timeout 5m
 
-                               kubectl apply -f k8s/monitoring/ingress-grafana.yaml
-                           """
-                    }
+                                kubectl apply -f k8s/monitoring/ingress-grafana.yaml
+                            """
+                        }
                 }
             }
         }

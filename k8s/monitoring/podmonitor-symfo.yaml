@@ -1,0 +1,17 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PodMonitor
+metadata:
+    name: symfony-api
+    namespace: monitoring
+    labels:
+        release: kube-prometheus-stack   # obligatoire pour que Prometheus le détecte
+spec:
+    namespaceSelector:
+        matchNames:
+            - the-tip-top-api              # surveille ce namespace
+    selector:
+        matchLabels:
+            app: symfony-api               # cible les pods avec ce label
+    podMetricsEndpoints:
+        - path: /metrics/prometheus      # endpoint exposé par le bundle
+          port: http                     # nom du port dans le Service
