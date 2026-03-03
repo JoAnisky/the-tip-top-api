@@ -14,7 +14,7 @@ spec:
                 app: symfony-api
             annotations:
                 prometheus.io/scrape: "true"
-                prometheus.io/path: "/metrics"
+                prometheus.io/path: "/metrics/prometheus"
                 prometheus.io/port: "80"
         spec:
             containers:
