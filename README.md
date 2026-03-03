@@ -1,163 +1,212 @@
-#  Thé Tip Top API
-API REST développée avec Symfony 7.3 pour le projet Thé Tip Top. Ce dépôt contient à la fois le code de l'application et l'infrastructure complète pour un déploiement continu sur Kubernetes.
+# 🍵 Thé Tip Top — API
 
-## 🌟 Technos du projet
+API REST du projet Thé Tip Top (jeu-concours Master). Ce dépôt contient le code de l'application Symfony et l'ensemble des manifests Kubernetes pour le déploiement continu sur cluster K3s.
 
-**Backend** : **Symfony 7.3** - _API REST_  
-**Base de données** : **MariaDB**  
-**Infrastructure** : **Kubernetes** - _Orchestration des conteneurs_  
-**CI/CD** : **Jenkins** - _Automatisation du pipeline de déploiement_  
-**Proxy** : **Traefik** - _Contrôleur Ingress et Reverse Proxy_
+## 🌟 Stack technique
 
-## 🏗️ Architecture du projet
-L'architecture est conteneurisée et déployée sur Kubernetes dans le namespace `the-tip-top-api`. Elle se compose des Pods suivants :
+| Couche | Technologie |
+|---|---|
+| **Backend** | Symfony 7.3 + API Platform |
+| **Base de données** | MariaDB 11 |
+| **Orchestration** | Kubernetes (K3s) |
+| **CI/CD** | Jenkins |
+| **Ingress / TLS** | Traefik + Let's Encrypt |
+| **Monitoring** | Prometheus + Grafana |
 
-- `symfony-api` : Conteneur de l'application PHP/Apache.
-- `mariadb` : Conteneur de la base de données, avec volume persistant.
-- `phpmyadmin` : Interface d'administration web pour MariaDB.
+## 🏗️ Architecture
 
-### 📁 Structure des fichiers Kubernetes (k8s/)
-Le déploiement s'appuie sur Kustomize pour gérer les manifestes Kubernetes. L'exécution de `kubectl apply -k k8s/` applique l'ensemble des ressources suivantes :
+```
+[Internet]
+  └── Traefik (Ingress + TLS Let's Encrypt)
+        ├── api.the-tip-top.jonathanlore.fr → symfony-api
+        └── pma.the-tip-top.jonathanlore.fr → phpmyadmin
 
-`kustomization.yaml` : Le fichier d'assemblage principal.  
-`deployments/` : Fichiers `Deployment` (API, DB, PMA).  
-`services/` : Fichiers `Service` de type ClusterIP.  
-`ingress/` : Fichier `Ingress` pour l'exposition externe (API et PMA).  
-`database/` : Fichier `pvc-db.yaml` pour la persistance des données.
+[Namespace: the-tip-top-api]
+  ├── symfony-api        ← Application PHP/Apache
+  ├── mariadb            ← Base de données (volume persistant 5Gi)
+  ├── phpmyadmin         ← Interface d'administration MariaDB
+  └── mysqld-exporter    ← Export des métriques MariaDB vers Prometheus
 
-## 💻 Prérequis locaux et cluster
-Pour interagir avec le projet et le déployer, les outils suivants sont nécessaires :
-
-**Docker** et **docker compose**.
-**Kubernetes** (minikube, k3s ou un cluster managé).
-`kubectl` pour l'administration du cluster.
-Un **Ingress Controller** (`Traefik` est requis pour ce déploiement).
-**Jenkins** intégré au cluster, pour l’automatisation du CI/CD.
-
-## 🚀 Déploiement Kubernetes
-Étapes à suivre pour préparer le déploiement : créer le namespace et les secrets avant d'appliquer les manifestes.
-
-### 1. Préparation de l'environnement
-
-####  Création du namespace
-
-```bash
-kubectl create namespace the-tip-top-api 
+[Namespace: monitoring — repo k8s-infra]
+  ├── Prometheus         ← Scrape les métriques toutes les 15s
+  └── Grafana            ← Dashboards (grafana.jonathanlore.fr)
 ```
 
-#### Création des secrets
-Les secrets servent à stocker des informations sensibles. Ils sont référencés dans les fichiers `deployment-api.yaml` et `deployment-db.yaml`.
+## 📁 Structure Kubernetes
 
-**Secret MariaDB (mariadb-secret)** : Contient les identifiants d'accès à la base de données.
+```
+k8s/
+├── kustomization.yaml          ← Assemblage principal (kubectl apply -k k8s/)
+├── api/                        ← Deployment + Service + Ingress Symfony
+├── database/                   ← Deployment + Service + PVC MariaDB
+├── phpmyadmin/                 ← Deployment + Service + Ingress PHPMyAdmin
+├── mysqld-exporter/            ← Deployment + Service mysqld-exporter
+└── monitoring/
+    ├── kustomization.yaml
+    ├── podmonitor-symfony.yaml ← Scraping /metrics/prometheus (Symfony)
+    └── podmonitor-mysqld.yaml  ← Scraping :9104/metrics (mysqld-exporter)
+```
+
+## 🚀 Déploiement
+
+Le déploiement complet est automatisé via Jenkins. En cas de besoin manuel :
+
+### 1. Namespace
+
+```bash
+kubectl create namespace the-tip-top-api
+```
+
+### 2. Secrets
+
+Les secrets sont normalement créés par le pipeline Jenkins. Pour les créer manuellement :
+
+**MariaDB :**
 ```bash
 kubectl create secret generic mariadb-secret \
---from-literal=root-password='mot_de_passe_root' \
---from-literal=user-password='mot_de_passe_utilisateur' \
--n the-tip-top-api
+  --from-literal=root-password='<ROOT_PASSWORD>' \
+  --from-literal=user-password='<USER_PASSWORD>' \
+  -n the-tip-top-api
 ```
 
-**Secret Symfony (symfony-env)** : Contient les variables d’environnement de l’application.
+**Symfony :**
 ```bash
 kubectl create secret generic symfony-env \
---from-literal=APP_ENV=prod \
---from-literal=APP_SECRET='clef_symfony' \
---from-literal=DATABASE_URL='mysql://api_user:mot_de_passe_utilisateur@mariadb:3306/the_tip_top?serverVersion=11&charset=utf8mb4' \
--n the-tip-top-api
-```
-**Note** : D'autres variables (ex: `MAILER_DSN`, `JWT_PASSPHRASE`) peuvent y être ajoutées ultérieurement.
-
-
-####  Création du volume persistant
-
-Un `PersistentVolumeClaim` (PVC) est nécessaire pour garantir la persistance des données de MariaDB (voir `k8s/database/pvc-db.yaml`). 
-
-```yaml
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: mariadb-pvc
-  namespace: the-tip-top-api
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 5Gi
-  storageClassName: ""
+  --from-literal=APP_ENV=prod \
+  --from-literal=APP_SECRET='<APP_SECRET>' \
+  --from-literal=DATABASE_URL='mysql://api_user:<USER_PASSWORD>@mariadb:3306/the_tip_top?serverVersion=11&charset=utf8mb4' \
+  -n the-tip-top-api
 ```
 
-**Attention VPS** : Si le cluster n'a pas de provisioner de stockage automatique, un PersistentVolume (PV) manuel pointant vers un chemin sur le disque (`/mnt/data/mariadb` par exemple) doit être créé avant d'appliquer ce PVC.
+**JWT :**
+```bash
+kubectl create secret generic jwt-keys \
+  --from-file=private.pem=./config/jwt/private.pem \
+  --from-file=public.pem=./config/jwt/public.pem \
+  -n the-tip-top-api
+```
 
-### 2. Déploiement de la stack
-Chaque service Kubernetes a son propre dossier. Un fichier kustomization.yaml permet de lancer les différents fichiers de chaque dossier (pod) : deployment, ingress, service...  
-Une fois les prérequis créés, lancer le déploiement complet via Kustomize :
+**OAuth :**
+```bash
+kubectl create secret generic oauth-secrets \
+  --from-literal=GOOGLE_CLIENT_ID='<ID>' \
+  --from-literal=GOOGLE_CLIENT_SECRET='<SECRET>' \
+  --from-literal=FACEBOOK_CLIENT_ID='<ID>' \
+  --from-literal=FACEBOOK_CLIENT_SECRET='<SECRET>' \
+  --from-literal=TRUSTED_PROXIES='10.0.0.0/8,172.16.0.0/12,192.168.0.0/16' \
+  -n the-tip-top-api
+```
+
+**mysqld-exporter :**
+```bash
+kubectl create secret generic mysqld-exporter-secret \
+  --from-literal=DATA_SOURCE_NAME="exporter:<PASSWORD>@tcp(mariadb:3306)/" \
+  -n the-tip-top-api
+```
+
+### 3. Déploiement
 
 ```bash
 kubectl apply -k k8s/
+kubectl apply -k k8s/monitoring/
 ```
 
-### 3. Vérification du Déploiement 
-
-Lister les ressources créées dans le namespace (the-tip-top-api)
+### 4. Vérification
 
 ```bash
 kubectl get pods -n the-tip-top-api
 kubectl get svc -n the-tip-top-api
 kubectl get ingress -n the-tip-top-api
+kubectl get secrets -n the-tip-top-api
 ```
+
 Pods attendus :
-- symfony-api
-- mariadb
-- phpmyadmin
+- `symfony-api` — Running
+- `mariadb` — Running
+- `phpmyadmin` — Running
+- `mysqld-exporter` — Running
 
-Services attendus :
-- service-api
-- service-db
-- service-pma
+## 🔁 Pipeline Jenkins
 
-## Commandes utiles 
+Le `Jenkinsfile` automatise les étapes suivantes sur chaque push sur `main` :
 
-Logs
+| Stage | Description |
+|---|---|
+| **Build Docker Image** | Build + push `joanisky/the-tip-top-api:<BUILD_NUMBER>` |
+| **Deploy JWT Secrets** | Recrée le secret `jwt-keys` depuis les credentials Jenkins |
+| **Deploy OAuth Secrets** | Crée/met à jour `oauth-secrets` |
+| **Deploy Mysqld Exporter Secret** | Crée/met à jour `mysqld-exporter-secret` |
+| **Deploy PodMonitors** | `kubectl apply -k k8s/monitoring/` |
+| **Deploy to Kubernetes** | `kubectl apply -k k8s/` + rollout de la nouvelle image |
+| **Database Migrations** | `doctrine:schema:update` + `cache:clear` |
+| **Verify Deployment** | Affiche l'état des pods, services, ingress, secrets |
+| **Health Check** | Attend un HTTP 200 sur `/api` avant de valider |
+
+### Credentials Jenkins requis
+
+| ID | Type | Usage |
+|---|---|---|
+| `jenkins-dockerhub` | Username/Password | Push image Docker Hub |
+| `kubeconfig` | File | Accès cluster K3s |
+| `jwt-private-key` | File | Clé privée JWT |
+| `jwt-public-key` | File | Clé publique JWT |
+| `GOOGLE_CLIENT_ID` | Secret text | OAuth Google |
+| `GOOGLE_CLIENT_SECRET` | Secret text | OAuth Google |
+| `FACEBOOK_CLIENT_ID` | Secret text | OAuth Facebook |
+| `FACEBOOK_CLIENT_SECRET` | Secret text | OAuth Facebook |
+| `MYSQLD_EXPORTER_PASSWORD` | Secret text | Connexion mysqld-exporter → MariaDB |
+
+## 📊 Monitoring
+
+Les métriques sont exposées via deux exporters et visualisées dans Grafana (`https://grafana.jonathanlore.fr`).
+
+### Symfony — artprima/prometheus-metrics-bundle
+
+Endpoint : `GET /metrics/prometheus`
+
+| Métrique | Type | Description |
+|---|---|---|
+| `thetiptop_http_requests_total` | Counter | Requêtes HTTP totales |
+| `thetiptop_http_2xx_responses_total` | Counter | Réponses 2xx |
+| `thetiptop_http_4xx_responses_total` | Counter | Erreurs client |
+| `thetiptop_request_durations_histogram_seconds` | Histogram | Temps de réponse p50/p95/p99 |
+
+Dashboard : importer `vendor/artprima/prometheus-metrics-bundle/grafana/symfony-app-overview.json`, variable **Namespace** = `thetiptop`.
+
+### MariaDB — mysqld-exporter
+
+Endpoint : `:9104/metrics`
+
+L'utilisateur MariaDB `exporter` doit avoir les droits :
+```sql
+GRANT PROCESS, REPLICATION CLIENT, SELECT ON *.* TO 'exporter'@'%';
+```
+
+Dashboard : importer l'ID **`14057`** depuis grafana.com.
+
+## 🌐 Endpoints
+
+| Service | URL |
+|---|---|
+| API | https://api.the-tip-top.jonathanlore.fr/api |
+| PHPMyAdmin | https://pma.the-tip-top.jonathanlore.fr |
+
+## 🛠️ Commandes utiles
 
 ```bash
+# Logs en temps réel
 kubectl logs -f deployment/symfony-api -n the-tip-top-api
-```
 
-Entrer dans le conteneur (récupérer avant l'id de conteneur)
+# Shell dans le pod Symfony
+kubectl exec -it deployment/symfony-api -n the-tip-top-api -- bash
 
-```bash
-kubectl exec -it symfony-api-684bb965d9-bddkc -n the-tip-top-api -- bash
-```
-
-Voir la config du pod (par ex pour vérifier qu'un fichier de config s'est bien appliqué)
-
-```bash
-kubectl describe pod symfony-api-684bb965d9-bddkc -n the-tip-top-api
-```
-Redémarrer le conteneur (avec rollout on peut : `restart`, `pause`, `resume`, `undo`, `history`)
-
-```bash
+# Redémarrer un déploiement
 kubectl rollout restart deployment/symfony-api -n the-tip-top-api
+
+# Describe un pod (debug)
+kubectl describe pod -l app=symfony-api -n the-tip-top-api
+
+# Vérifier les métriques mysqld-exporter
+kubectl exec -n the-tip-top-api deployment/mysqld-exporter -- \
+  wget -qO- http://localhost:9104/metrics | grep mysql_up
 ```
-
-Vérifier la progression de la commande rollout
-
-```bash
-kubectl rollout status deployment/symfony-api -n the-tip-top-api
-```
-
-## 🔁 Intégration CI/CD avec Jenkins
-
-Le pipeline Jenkins automatise le flux de la CI/CD via un `Jenkinsfile` :
-
-1. **Build Docker** : Construction de l'image Docker de l'API.
-2. **Push Registry** : Envoi de l'image à la registry (`joanisky/the-tip-top-api`).
-3. **Déploiement K8s** : Exécution de la commande `kubectl apply -k k8s/` pour mettre à jour les Deployment.
-4. **Vérification** : Contrôle de l'état des Pods, Services et Ingress.
-
-Pour interagir avec le cluster, Jenkins utilise un secret `kubeconfig` stocké dans ses Credentials, lui permettant d'accéder aux droits d'administration du cluster distant.
-
-## 🌐 Accès aux Endpoints
-Une fois le déploiement réussi, l'API et PHPMyAdmin sont accessibles via le reverse proxy Traefik selon les règles définies dans le manifeste Ingress :
-- **API (Application Symfony)** : https://api.the-tip-top.jonathanlore.fr
-- **PHPMyAdmin** : https://pma.the-tip-top.jonathanlore.fr
