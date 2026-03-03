@@ -98,14 +98,13 @@ pipeline {
                     file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE'),
                     string(credentialsId: 'MYSQLD_EXPORTER_PASSWORD', variable: 'EXPORTER_PASS')
                 ]) {
-                    // guillemets doubles : Jenkins interpole EXPORTER_PASS
-                    // \$ : échappe les variables shell pour ne pas être lues par Groovy
                     sh '''
                         export KUBECONFIG=$KUBECONFIG_FILE
                         kubectl create secret generic mysqld-exporter-secret \
                             --from-literal=DATA_SOURCE_NAME="exporter:$EXPORTER_PASS@tcp(mariadb:3306)/" \
                             -n the-tip-top-api \
                             --dry-run=client -o yaml | kubectl apply -f -
+                        kubectl rollout restart deployment/mysqld-exporter -n the-tip-top-api
                     '''
                 }
             }
