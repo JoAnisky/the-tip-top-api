@@ -1,8 +1,5 @@
 grafana:
-    adminUser: ""
-    adminPassword: ""
-    envFromSecret: "grafana-admin-secret"
-
+    adminUser: "adminsky"
     ingress:
         enabled: false
 

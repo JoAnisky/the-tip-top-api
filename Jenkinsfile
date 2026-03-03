@@ -118,6 +118,7 @@ pipeline {
                                    prometheus-community/kube-prometheus-stack \
                                    --namespace monitoring \
                                    --values k8s/monitoring/helm-values.yaml \
+                                   --set grafana.adminPassword=\${GRAFANA_PASS} \
                                    --wait \
                                    --timeout 5m
 
