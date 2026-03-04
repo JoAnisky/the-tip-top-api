@@ -109,6 +109,45 @@ pipeline {
                 }
             }
         }
+        stage('Deploy Backup Secrets') {
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig',     variable: 'KUBECONFIG_FILE'),
+                    string(credentialsId: 'RESTIC_PASSWORD', variable: 'RESTIC_PASS'),
+                    file(credentialsId: 'rclone-config',  variable: 'RCLONE_CONF')
+                ]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
+
+                        echo "Deploying Restic secret..."
+                        kubectl create secret generic restic-secret \
+                            --from-literal=RESTIC_PASSWORD=${RESTIC_PASS} \
+                            -n the-tip-top-api \
+                            --dry-run=client -o yaml | kubectl apply -f -
+
+                        echo "Deploying rclone config secret..."
+                        kubectl create secret generic rclone-config \
+                            --from-file=rclone.conf=${RCLONE_CONF} \
+                            -n the-tip-top-api \
+                            --dry-run=client -o yaml | kubectl apply -f -
+                    '''
+                }
+            }
+        }
+        stage('Deploy Backup CronJob') {
+            when { expression { env.GIT_BRANCH == 'origin/main' } }
+            steps {
+                withCredentials([
+                    file(credentialsId: 'kubeconfig', variable: 'KUBECONFIG_FILE')
+                ]) {
+                    sh '''
+                        export KUBECONFIG=$KUBECONFIG_FILE
+                        kubectl apply -k k8s/backup/
+                    '''
+                }
+            }
+        }
         stage('Deploy PodMonitors') {
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {

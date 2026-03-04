@@ -1,0 +1,81 @@
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+    name: restic-backup
+    namespace: the-tip-top-api
+spec:
+    schedule: "0 2 * * *"
+    concurrencyPolicy: Forbid
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    jobTemplate:
+        spec:
+            template:
+                spec:
+                    restartPolicy: OnFailure
+                    containers:
+                        - name: backup
+                          image: alpine:latest
+                          command:
+                              - /bin/sh
+                              - -c
+                              - |
+                                  set -e
+
+                                  echo "=== [0/4] Installation des outils ==="
+                                  apk add --no-cache restic rclone mariadb-client
+
+                                  echo "=== [1/4] Dump MariaDB ==="
+                                  mkdir -p /backup
+                                  mysqldump \
+                                    -h mariadb \
+                                    -u root \
+                                    -p"${MARIADB_ROOT_PASSWORD}" \
+                                    --all-databases \
+                                    --single-transaction \
+                                    > /backup/dump.sql
+                                  echo "Dump OK — $(wc -c < /backup/dump.sql) bytes"
+
+                                  echo "=== [2/4] Restic backup ==="
+                                  restic \
+                                    -r rclone:gdrive:restic-thetiptop \
+                                    --verbose \
+                                    backup /backup \
+                                    --tag "cronjob,mariadb"
+
+                                  echo "=== [3/4] Politique de rétention ==="
+                                  restic \
+                                    -r rclone:gdrive:restic-thetiptop \
+                                    forget \
+                                    --keep-daily 7 \
+                                    --keep-weekly 4 \
+                                    --keep-monthly 2 \
+                                    --prune
+
+                                  echo "=== [4/4] Vérification intégrité ==="
+                                  restic \
+                                    -r rclone:gdrive:restic-thetiptop \
+                                    check
+
+                                  echo "=== Backup terminé avec succès ==="
+                          env:
+                              - name: RESTIC_PASSWORD
+                                valueFrom:
+                                    secretKeyRef:
+                                        name: restic-secret
+                                        key: RESTIC_PASSWORD
+                              - name: MARIADB_ROOT_PASSWORD
+                                valueFrom:
+                                    secretKeyRef:
+                                        name: mariadb-secret
+                                        key: root-password
+                              - name: RCLONE_CONFIG
+                                value: /rclone/rclone.conf
+                          volumeMounts:
+                              - name: rclone-config
+                                mountPath: /rclone
+                                readOnly: true
+                    volumes:
+                        - name: rclone-config
+                          secret:
+                              secretName: rclone-config
