@@ -99,6 +99,7 @@ Les règles se cumulent — un snapshot peut être gardé par plusieurs règles 
 
 > Toutes les commandes suivantes se lancent **depuis le VPS** en root,
 > avec `rclone.conf` présent dans `/root/.config/rclone/`.
+> Copier ce fichier dans le repertoire `/autreuser/.config/rclone/` d'un autre utilisateur pour l'utiliser en non root
 
 ### Lister les snapshots disponibles
 
@@ -195,6 +196,15 @@ kubectl exec -n the-tip-top-api \
 ### Le CronJob ne s'est pas déclenché
 
 ```bash
+# Lister les jobs programmés
+kubectl get cronjob -n the-tip-top-api
+
+# Exemple de sortie
+NAME            SCHEDULE    TIMEZONE   SUSPEND   ACTIVE   LAST SCHEDULE   AGE
+restic-backup   0 2 * * *   <none>     False     0        <none>          4h22m
+```
+
+```bash
 # Vérifier l'historique des jobs
 kubectl get jobs -n the-tip-top-api
 
@@ -203,6 +213,7 @@ kubectl describe cronjob restic-backup -n the-tip-top-api
 ```
 
 ### Un job a échoué
+
 
 ```bash
 # Lister les pods du job échoué
