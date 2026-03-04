@@ -54,13 +54,44 @@ Ils sont créés/mis à jour automatiquement par le pipeline Jenkins.
 
 ## Politique de rétention
 
-```
---keep-daily 7    → 1 snapshot par jour   pendant 7 jours
---keep-weekly 4   → 1 snapshot par semaine pendant 4 semaines
---keep-monthly 2  → 1 snapshot par mois   pendant 2 mois
+`--keep-daily 7`  
+
+Garde le snapshot le plus récent de chacun des 7 derniers jours.
+
+```text
+25 mars, 26 mars, 27 mars, 28 mars, 29 mars, 30 mars, 31 mars  ✅ gardés
 ```
 
+`--keep-weekly 4`  
+
+Garde le snapshot le plus récent de chacune des 4 dernières semaines.
+
+```text
+Semaine du 24 mars  → 1 snapshot gardé  ✅ (probablement déjà couvert par daily)
+Semaine du 17 mars  → 1 snapshot gardé  ✅
+Semaine du 10 mars  → 1 snapshot gardé  ✅
+Semaine du  3 mars  → 1 snapshot gardé  ✅
+
+```
+
+`--keep-monthly 2`  
+
+Garde le snapshot le plus récent de chacun des 2 derniers mois.
+
+```text
+Mars   → 1 snapshot gardé  ✅ (probablement déjà couvert par weekly)
+Février → 1 snapshot gardé ✅
+```
+
+__Ce qui est supprimé__
+
+Tout le reste — c'est-à-dire les snapshots de février qui ne sont pas "le plus récent du mois", et tout ce qui est antérieur à 2 mois.
+En pratique sur 90 snapshots, Restic en garde environ 10-12 et supprime les ~78 autres.
 Le `--prune` supprime les données orphelines après chaque nettoyage.
+
+__Le point clé à retenir__  
+
+Les règles se cumulent — un snapshot peut être gardé par plusieurs règles à la fois. Restic garde tout snapshot qui satisfait au moins une des règles. Ce n'est pas "7 + 4 + 2 = 13 snapshots distincts" car il y a des chevauchements, mais c'est l'ordre de grandeur.
 
 ---
 
