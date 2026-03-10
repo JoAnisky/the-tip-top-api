@@ -32,15 +32,14 @@ pipeline {
                     sh '''
                         # Attendre que MariaDB soit prête via PHP (pas besoin du client mariadb)
                         echo "Attente de MariaDB..."
-                        until php -r "
-                            try {
-                                new PDO('mysql:host=localhost;port=3306;dbname=the_tip_top_testdb_test', 'test', 'test');
-                                exit(0);
-                            } catch (Exception \$e) {
-                                exit(1);
-                            }
-                        "; do
-                            echo "MariaDB pas encore prête, nouvelle tentative dans 3s..."
+                        TRIES=0
+                        until php -r 'try { new PDO("mysql:host=127.0.0.1;port=3306;dbname=the_tip_top_testdb_test", "test", "test"); exit(0); } catch (Exception $e) { echo $e->getMessage() . PHP_EOL; exit(1); }'; do
+                            TRIES=$((TRIES+1))
+                            if [ $TRIES -ge 20 ]; then
+                                echo "MariaDB inaccessible après 20 tentatives, abandon."
+                                exit 1
+                            fi
+                            echo "Tentative $TRIES/20, nouvelle tentative dans 3s..."
                             sleep 3
                         done
                         echo "MariaDB prête."
