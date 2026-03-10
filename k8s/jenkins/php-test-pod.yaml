@@ -1,0 +1,62 @@
+apiVersion: v1
+kind: Pod
+spec:
+    restartPolicy: Never
+
+    # Les deux containers partagent le même réseau — MariaDB accessible via localhost
+    containers:
+
+        - name: php
+          image: joanisky/the-tip-top-api:latest
+            # On écrase l'entrypoint Apache pour avoir un container dormant
+          command: ["sleep", "infinity"]
+          workingDir: /var/www/html
+            # Lancer en root pour pouvoir écrire dans le workspace Jenkins
+          securityContext:
+              runAsUser: 0
+          resources:
+              requests:
+                  memory: "512Mi"
+                  cpu: "250m"
+              limits:
+                  memory: "1Gi"
+                  cpu: "500m"
+          env:
+              - name: APP_ENV
+                value: "test"
+              - name: APP_DEBUG
+                value: "false"
+              - name: DATABASE_URL
+                value: "mysql://test:test@localhost:3306/the_tip_top_testdb_test?serverVersion=10.11.14-MariaDB&charset=utf8mb4"
+
+        - name: mariadb
+          image: mariadb:10.11
+          resources:
+              requests:
+                  memory: "256Mi"
+                  cpu: "100m"
+              limits:
+                  memory: "512Mi"
+                  cpu: "250m"
+          env:
+              - name: MARIADB_ROOT_PASSWORD
+                value: "root"
+              - name: MARIADB_DATABASE
+                value: "the_tip_top_testdb_test"
+              - name: MARIADB_USER
+                value: "test"
+              - name: MARIADB_PASSWORD
+                value: "test"
+            # Readiness probe pour attendre que MariaDB soit prête avant les tests
+          readinessProbe:
+              exec:
+                  command:
+                      - mariadb-admin
+                      - ping
+                      - -h
+                      - localhost
+                      - -utest
+                      - -ptest
+              initialDelaySeconds: 10
+              periodSeconds: 5
+              failureThreshold: 12
