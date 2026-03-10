@@ -1,0 +1,5 @@
+services:
+    App\Tests\Fixtures\TestFixtures:
+        arguments:
+            $hasher: '@security.user_password_hasher'
+        tags: [ 'doctrine.fixture.orm' ]

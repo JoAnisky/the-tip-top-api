@@ -48,8 +48,3 @@ services:
     App\Service\TokenService:
         arguments:
             $refreshTokenTtl: '%app.refresh_token_ttl%'
-
-    App\Tests\Fixtures\TestFixtures:
-        arguments:
-            $hasher: '@security.user_password_hasher'
-        tags: [ 'doctrine.fixture.orm' ]
