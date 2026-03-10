@@ -1,5 +1,5 @@
 pipeline {
-    agent any
+    agent none
 
     environment {
         APP_NAME = "the-tip-top-api"
@@ -10,17 +10,75 @@ pipeline {
     }
 
     stages {
-
         stage('Checkout') {
             steps {
                 checkout scm
                 script {
-                    echo "Build: ${BUILD_NUMBER}"
+                    env.GIT_BRANCH_NAME = env.GIT_BRANCH ?: scm.branches[0].name
+                    echo "Build: ${BUILD_NUMBER} — Branche: ${env.GIT_BRANCH_NAME}"
                 }
             }
         }
+        stage('Tests') {
+            agent {
+                kubernetes {
+                    yamlFile 'k8s/jenkins/php-test-pod.yaml'
+                    defaultContainer 'php'
+                }
+            }
+            steps {
+                container('php') {
+                    sh '''
+                        # --- Attendre que MariaDB soit prête ---
+                        echo "Attente de MariaDB..."
+                        until mariadb-admin ping -h localhost -utest -ptest --silent; do
+                            echo "MariaDB pas encore prête, nouvelle tentative dans 3s..."
+                            sleep 3
+                        done
+                        echo "MariaDB prête."
 
-        stage('Build Docker Image') {
+                        # --- Installer les dépendances avec les packages de test ---
+                        composer install --prefer-dist --no-progress --no-interaction
+
+                        # --- Préparer le fichier .env.test pour le container ---
+                        # DATABASE_URL est déjà injecté via les env vars du pod
+                        echo "APP_ENV=test" > .env.test.local
+                        echo "DATABASE_URL=${DATABASE_URL}" >> .env.test.local
+
+                        # --- Créer le schéma de la base de test ---
+                        php bin/console doctrine:schema:create --env=test --no-interaction
+
+                        # --- Lancer tous les tests avec rapport JUnit ---
+                        mkdir -p test-results/phpunit
+                        APP_ENV=test ./vendor/bin/phpunit \
+                            --log-junit test-results/phpunit/junit.xml \
+                            --testdox
+                    '''
+                }
+            }
+            post {
+                always {
+                    stash includes: 'test-results/phpunit/**', name: 'phpunit-reports', allowEmpty: true
+                }
+            }
+        }
+        stage('Publish Reports') {
+            agent any
+            options {
+                skipDefaultCheckout true
+            }
+            steps {
+                unstash 'phpunit-reports'
+                junit allowEmptyResults: true, testResults: 'test-results/phpunit/junit.xml'
+            }
+            post {
+                always {
+                    cleanWs()
+                }
+            }
+        }
+        stage('Build & Push Docker Image') {
+            agent any
             steps {
                 withCredentials([
                     usernamePassword(credentialsId: 'jenkins-dockerhub', usernameVariable: 'DOCKER_USER', passwordVariable: 'DOCKER_PASS')
@@ -41,6 +99,7 @@ pipeline {
             }
         }
         stage('Deploy JWT Secrets') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 script {
@@ -64,6 +123,7 @@ pipeline {
             }
         }
         stage('Deploy OAuth Secrets') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 script {
@@ -92,6 +152,7 @@ pipeline {
             }
         }
         stage('Deploy Mysqld Exporter Secret') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 withCredentials([
@@ -110,6 +171,7 @@ pipeline {
             }
         }
         stage('Deploy Backup Secrets') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 withCredentials([
@@ -136,6 +198,7 @@ pipeline {
             }
         }
         stage('Deploy Backup CronJob') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 withCredentials([
@@ -149,6 +212,7 @@ pipeline {
             }
         }
         stage('Deploy PodMonitors') {
+            agent any
             when { expression { env.GIT_BRANCH == 'origin/main' } }
             steps {
                 withCredentials([
@@ -162,6 +226,7 @@ pipeline {
             }
         }
         stage('Deploy to Kubernetes') {
+            agent any
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
             }
@@ -191,6 +256,7 @@ pipeline {
             }
         }
         stage('Database Migrations') {
+            agent any
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
             }
@@ -227,6 +293,7 @@ pipeline {
             }
         }
         stage('Verify Deployment') {
+            agent any
             when {
                 expression { env.GIT_BRANCH == 'origin/main' }
             }
@@ -263,6 +330,7 @@ pipeline {
             }
         }
         stage('Health Check') {
+            agent any
             steps {
                 script {
                     timeout(time: 2, unit: 'MINUTES') {
@@ -289,12 +357,12 @@ pipeline {
             }
         }
     }
-
     post {
         always {
             // Supprime les images locales pour ne pas saturer le disque du VPS
-            sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
-            cleanWs()
+            node('built-in') {
+                sh "docker rmi ${DOCKER_IMAGE}:${DOCKER_TAG} || true"
+            }
         }
         success {
             echo "✅ ${APP_NAME} déployé avec succès !"
