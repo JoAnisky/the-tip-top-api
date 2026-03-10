@@ -112,6 +112,10 @@ class CodeValidationProcessorTest extends TestCase
 
     // --- Tests ---
 
+    /**
+     * Throws access denied when user not authenticated
+     * @return void
+     */
     public function testThrowsAccessDeniedWhenUserNotAuthenticated(): void
     {
         $this->security->method('getUser')->willReturn(null);
@@ -124,6 +128,10 @@ class CodeValidationProcessorTest extends TestCase
         );
     }
 
+    /**
+     * Throws too many requests when rate limit exceeded
+     * @return void
+     */
     public function testThrowsTooManyRequestsWhenRateLimitExceeded(): void
     {
         $user = new User();
@@ -139,6 +147,10 @@ class CodeValidationProcessorTest extends TestCase
         );
     }
 
+    /**
+     * Throws bad request when code not found
+     * @return void
+     */
     public function testThrowsBadRequestWhenCodeNotFound(): void
     {
         $this->withAuthenticatedUser();
@@ -153,6 +165,10 @@ class CodeValidationProcessorTest extends TestCase
         );
     }
 
+    /**
+     * Throws bad request when code already validated
+     * @return void
+     */
     public function testThrowsBadRequestWhenCodeAlreadyValidated(): void
     {
         $user = $this->withAuthenticatedUser();
@@ -171,6 +187,10 @@ class CodeValidationProcessorTest extends TestCase
         );
     }
 
+    /**
+     * Throws bad request when code expired
+     * @return void
+     */
     public function testThrowsBadRequestWhenCodeExpired(): void
     {
         $this->withAuthenticatedUser();
@@ -189,6 +209,10 @@ class CodeValidationProcessorTest extends TestCase
         );
     }
 
+    /**
+     * Successful validation assigns winner and increments gain
+     * @return void
+     */
     public function testSuccessfulValidationAssignsWinnerAndIncrementsGain(): void
     {
         $user = $this->withAuthenticatedUser('winner@test.com');
