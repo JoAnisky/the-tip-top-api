@@ -44,6 +44,12 @@ pipeline {
                         done
                         echo "MariaDB prête."
 
+                        # Générer des clés JWT temporaires pour les tests (sinon pas de test possible sur /login)
+                        mkdir -p config/jwt
+                        openssl genpkey -algorithm RSA -out config/jwt/private.pem -pkeyopt rsa_keygen_bits:2048
+                        openssl rsa -pubout -in config/jwt/private.pem -out config/jwt/public.pem
+                        echo "JWT_PASSPHRASE=test" >> .env.test.local
+
                         # --- Installer les dépendances avec les packages de test ---
                         composer install --prefer-dist --no-progress --no-interaction
 
