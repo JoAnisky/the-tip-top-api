@@ -80,7 +80,10 @@
         ],
         "post-update-cmd": [
             "@auto-scripts"
-        ]
+        ],
+        "test": "APP_ENV=test ./vendor/bin/phpunit",
+        "test:unit": "APP_ENV=test ./vendor/bin/phpunit --testsuite Unit --testdox",
+        "test:functional": "APP_ENV=test ./vendor/bin/phpunit --testsuite Functional --testdox"
     },
     "conflict": {
         "symfony/symfony": "*"
