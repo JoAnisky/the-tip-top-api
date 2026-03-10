@@ -30,9 +30,16 @@ pipeline {
             steps {
                 container('php') {
                     sh '''
-                        # --- Attendre que MariaDB soit prête ---
+                        # Attendre que MariaDB soit prête via PHP (pas besoin du client mariadb)
                         echo "Attente de MariaDB..."
-                        until mariadb-admin ping -h localhost -utest -ptest --silent; do
+                        until php -r "
+                            try {
+                                new PDO('mysql:host=localhost;port=3306;dbname=the_tip_top_testdb_test', 'test', 'test');
+                                exit(0);
+                            } catch (Exception \$e) {
+                                exit(1);
+                            }
+                        "; do
                             echo "MariaDB pas encore prête, nouvelle tentative dans 3s..."
                             sleep 3
                         done
