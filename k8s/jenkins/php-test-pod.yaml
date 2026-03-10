@@ -27,7 +27,7 @@ spec:
               - name: APP_DEBUG
                 value: "false"
               - name: DATABASE_URL
-                value: "mysql://test:test@localhost:3306/the_tip_top_testdb_test?serverVersion=10.11.14-MariaDB&charset=utf8mb4"
+                value: "mysql://test:test@127.0.0.1:3306/the_tip_top_testdb_test?serverVersion=10.11.14-MariaDB&charset=utf8mb4"
 
         - name: mariadb
           image: mariadb:10.11
