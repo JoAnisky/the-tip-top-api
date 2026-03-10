@@ -381,11 +381,26 @@ pipeline {
             }
         }
         success {
-            echo "✅ ${APP_NAME} déployé avec succès !"
-            echo "🌐 API : https://api.the-tip-top.jonathanlore.fr/api"
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_URL')]) {
+                discordSend(
+                    webhookURL: DISCORD_URL,
+                    title: "✅ Déploiement Réussi : ${APP_NAME}",
+                    link: env.BUILD_URL,
+                    result: 'SUCCESS',
+                    description: "Le build #${env.BUILD_NUMBER} a été déployé avec succès sur Kubernetes.\n**Branche:** ${env.GIT_BRANCH_NAME}"
+                )
+            }
         }
         failure {
-            echo "❌ Pipeline échoué"
+            withCredentials([string(credentialsId: 'discord-webhook-url', variable: 'DISCORD_URL')]) {
+                discordSend(
+                    webhookURL: DISCORD_URL,
+                    title: "❌ Échec du Pipeline : ${APP_NAME}",
+                    link: env.BUILD_URL,
+                    result: 'FAILURE',
+                    description: "Le build #${env.BUILD_NUMBER} a échoué. \nConsulte les logs ici : ${env.BUILD_URL}console"
+                )
+            }
         }
     }
 }
