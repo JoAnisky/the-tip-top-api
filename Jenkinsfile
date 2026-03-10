@@ -30,6 +30,9 @@ pipeline {
             steps {
                 container('php') {
                     sh '''
+                        # fix fatal: detected dubious ownership in repository at '/var/www/html/workspace/the-tip-top-api'
+                        git config --global --add safe.directory /var/www/html/workspace/the-tip-top-api
+
                         # Attendre que MariaDB soit prête via PHP (pas besoin du client mariadb)
                         echo "Attente de MariaDB..."
                         TRIES=0
