@@ -14,6 +14,10 @@ down-dev:
 down-prod:
 	docker compose --env-file .docker/.env.docker.prod down
 
+# Entrer dans le conteneur
+bash:
+	docker exec -it ttt-api bash
+
 # Afficher les logs du conteneur app en dev
 logs-dev:
 	docker compose --env-file .docker/.env.docker.dev logs -f ttt-api
