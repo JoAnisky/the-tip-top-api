@@ -21,14 +21,14 @@ node-exporter    ──→  métriques VPS    ──────┘
 
 ## Les 6 alertes configurées
 
-| Règle | Métrique PromQL | Seuil | Pending period | Catégorie |
-|---|---|---|---|---|
-| MariaDB inaccessible | `mysql_up` | `< 1` | immédiat | BDD |
-| PVC MariaDB > 80% | `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100` | `> 80%` | 5 min | Stockage |
-| Taux d'erreurs 4xx élevé | `sum(rate(thetiptop_http_4xx_responses_total[5m])) / sum(rate(thetiptop_http_requests_total[5m])) * 100` | `> 10%` | 2 min | Applicatif |
-| Temps de réponse p95 dégradé | `histogram_quantile(0.95, sum(rate(thetiptop_request_durations_histogram_seconds_bucket[5m])) by (le))` | `> 2s` | 2 min | Applicatif |
-| CPU nœud > 85% | `100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)` | `> 85%` | 5 min | Infra VPS |
-| RAM nœud > 90% | `100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100)` | `> 90%` | 5 min | Infra VPS |
+| Règle                        | Métrique PromQL                                                                                          | Seuil   | Pending period | Catégorie  |
+|------------------------------|----------------------------------------------------------------------------------------------------------|---------|----------------|------------|
+| MariaDB inaccessible         | `mysql_up`                                                                                               | `< 1`   | immédiat       | BDD        |
+| PVC MariaDB > 80%            | `kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes * 100`                            | `> 80%` | 5 min          | Stockage   |
+| Taux d'erreurs 4xx élevé     | `sum(rate(thetiptop_http_4xx_responses_total[5m])) / sum(rate(thetiptop_http_requests_total[5m])) * 100` | `> 10%` | 2 min          | Applicatif |
+| Temps de réponse p95 dégradé | `histogram_quantile(0.95, sum(rate(thetiptop_request_durations_histogram_seconds_bucket[5m])) by (le))`  | `> 2s`  | 2 min          | Applicatif |
+| CPU nœud > 85%               | `100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)`                                       | `> 85%` | 5 min          | Infra VPS  |
+| RAM nœud > 90%               | `100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100)`                              | `> 90%` | 5 min          | Infra VPS  |
 
 ---
 
@@ -83,7 +83,16 @@ Le volume persistant monte `/var/lib/grafana` sur le stockage du nœud, qui surv
 ## Configuration des alertes (export Grafana)
 
 Les alertes sont exportables depuis **Alerting → Alert rules → Export** au format YAML.  
-Ce fichier peut être versionné dans le repo pour documenter l'état du système d'alerting.
+
+Le fichier `k8s/monitoring/grafana-alert-rules.yaml` contient la configuration des alertes.
+
+**Ce qu'il ne couvre pas ⚠️**  
+Le Contact Point Discord (webhook) et la Notification Policy ne sont pas dans cet export.  
+En cas de perte, il faudra recréer manuellement les valeurs suivantes dans l'UI avant d'importer les règles :
+
+- L'URL du webhook Discord
+- Le nom du contact point : Discord
+- La notification policy : default contact point → Discord
 
 ```
 k8s/monitoring/
@@ -97,18 +106,20 @@ k8s/monitoring/
 the-tip-top-api/k8s/monitoring/
 ├── kustomization.yaml
 ├── podmonitor-symfony.yaml   ← scraping /metrics/prometheus du pod Symfony
-└── podmonitor-mysqld.yaml    ← scraping :9104/metrics du pod mysqld-exporter
+├── podmonitor-mysqld.yaml    ← scraping :9104/metrics du pod mysqld-exporter
+├── grafana-alert-rules.yaml  ← export des 6 règles d'alerte (à importer via Alerting → Import)
+└── METRICS_ALERTS.md         ← documentation du système d'alerting (ce fichier)
 ```
 
 ---
 
 ## Tableau de bord — quel dashboard ouvrir selon la situation
 
-| Situation | Dashboard Grafana |
-|---|---|
-| L'API répond lentement | Symfony Application Overview → MySQL Exporter |
-| Le VPS est lent ou surchargé | Node Exporter / Nodes |
-| Un pod crashe ou ne démarre pas | Kubernetes / Compute Resources / Workload |
-| La BDD risque de manquer de place | Kubernetes / Persistent Volumes |
-| Erreurs réseau entre services | Kubernetes / Networking / Namespace |
-| Les métriques semblent absentes | Prometheus / Overview |
+| Situation                         | Dashboard Grafana                             |
+|-----------------------------------|-----------------------------------------------|
+| L'API répond lentement            | Symfony Application Overview → MySQL Exporter |
+| Le VPS est lent ou surchargé      | Node Exporter / Nodes                         |
+| Un pod crashe ou ne démarre pas   | Kubernetes / Compute Resources / Workload     |
+| La BDD risque de manquer de place | Kubernetes / Persistent Volumes               |
+| Erreurs réseau entre services     | Kubernetes / Networking / Namespace           |
+| Les métriques semblent absentes   | Prometheus / Overview                         |

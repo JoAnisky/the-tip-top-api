@@ -1,0 +1,312 @@
+apiVersion: 1
+groups:
+    - orgId: 1
+      name: thetiptop-alerts
+      folder: TheTipTop
+      interval: 1m
+      rules:
+        - uid: affpfgcuf22gwd
+          title: MariaDB inaccessible
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: mysql_up
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 1
+                        type: lt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          annotations:
+            description: 'mysql_up = 0 : le mysqld-exporter ne peut plus joindre MariaDB'
+            summary: MariaDB est inaccessible depuis le pod mysqld-exporter
+          isPaused: false
+          notification_settings:
+            receiver: Discord
+        - uid: dffphnznttg5ce
+          title: PVC MariaDB > 80%
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: "kubelet_volume_stats_used_bytes{namespace=\"the-tip-top-api\"} \r\n/ \r\nkubelet_volume_stats_capacity_bytes{namespace=\"the-tip-top-api\"} \r\n* 100"
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 80
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 5m
+          annotations:
+            description: Le volume persistant de MariaDB est presque plein - risque de crash imminent si rien n'est fait
+            summary: PVC MariaDB dépasse 80% de capacité
+          isPaused: false
+          notification_settings:
+            receiver: Discord
+        - uid: affpjfrn6fcowe
+          title: Taux d'erreurs 4xx élevé
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: "sum(rate(thetiptop_http_4xx_responses_total[5m]))\r\n/\r\nsum(rate(thetiptop_http_requests_total[5m]))\r\n* 100"
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 10
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 2m
+          annotations:
+            description: Plus de 10% des requêtes retournent une erreur 4xx sur les 5 dernières minutes — possible abus ou attaque
+            summary: Taux d'erreurs 4xx anormalement élevé
+          isPaused: false
+          notification_settings:
+            receiver: Discord
+        - uid: cffpkeh9qqyo0d
+          title: Temps de réponse p95 dégradé
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: "histogram_quantile(0.95, \r\n  sum(rate(thetiptop_request_durations_histogram_seconds_bucket[5m])) by (le)\r\n)"
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 2
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 2m
+          annotations:
+            description: 95% des requêtes prennent plus de 2 secondes — l'API est lente, vérifier la charge MariaDB et les pods
+            summary: Temps de réponse p95 dégradé sur l'API
+          isPaused: false
+          notification_settings:
+            receiver: Discord
+        - uid: dffpl369vss1sd
+          title: CPU nœud > 85%
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: 100 - (avg(rate(node_cpu_seconds_total{mode="idle"}[5m])) * 100)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 85
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 5m
+          annotations:
+            description: Le VPS est en surcharge CPU depuis 5 minutes — vérifier les pods gourmands via Compute Resources
+            summary: CPU du nœud dépasse 85%
+          isPaused: false
+          notification_settings:
+            receiver: Discord
+        - uid: effpl6qkf241sc
+          title: RAM nœud > 90%
+          condition: C
+          data:
+            - refId: A
+              relativeTimeRange:
+                from: 600
+                to: 0
+              datasourceUid: prometheus
+              model:
+                editorMode: code
+                expr: 100 - (node_memory_MemAvailable_bytes / node_memory_MemTotal_bytes * 100)
+                instant: true
+                intervalMs: 1000
+                legendFormat: __auto
+                maxDataPoints: 43200
+                range: false
+                refId: A
+            - refId: C
+              datasourceUid: __expr__
+              model:
+                conditions:
+                    - evaluator:
+                        params:
+                            - 90
+                        type: gt
+                      operator:
+                        type: and
+                      query:
+                        params: []
+                      reducer:
+                        params: []
+                        type: last
+                      type: query
+                datasource:
+                    type: __expr__
+                    uid: __expr__
+                expression: A
+                intervalMs: 1000
+                maxDataPoints: 43200
+                refId: C
+                type: threshold
+          noDataState: OK
+          execErrState: Error
+          for: 5m
+          annotations:
+            description: Le VPS manque de mémoire depuis 5 minutes - risque d'OOM Kill sur les pods
+            summary: RAM du nœud dépasse 90%
+          isPaused: false
+          notification_settings:
+            receiver: Discord
