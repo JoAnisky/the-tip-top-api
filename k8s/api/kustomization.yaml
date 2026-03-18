@@ -6,3 +6,4 @@ resources:
     - configmap.yaml
     - service-api.yaml
     - ingress-api.yaml
+    - ingress-api-doc.yaml
