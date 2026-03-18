@@ -1,7 +1,9 @@
 api_platform:
     patch_formats:
         json: [ 'application/merge-patch+json' ]
-    enable_swagger_ui: true
+    swagger:
+        api_keys: [ ]
+    enable_swagger_ui: false
     enable_re_doc: false
     title: Hello Thé Tip Top
     version: 1.0.0
