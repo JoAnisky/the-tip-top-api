@@ -1,12 +1,13 @@
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-    name: api-ingress
+    name: api-doc-ingress
     namespace: the-tip-top-api
     annotations:
         traefik.ingress.kubernetes.io/router.entrypoints: web,websecure
         traefik.ingress.kubernetes.io/router.tls: "true"
         traefik.ingress.kubernetes.io/router.tls.certresolver: letsencrypt
+        traefik.ingress.kubernetes.io/router.middlewares: the-tip-top-api-api-doc-auth@kubernetescrd
 spec:
     tls:
         - hosts:
@@ -16,7 +17,7 @@ spec:
         - host: api.the-tip-top.jonathanlore.fr
           http:
               paths:
-                  - path: /
+                  - path: /api/docs
                     pathType: Prefix
                     backend:
                         service:
