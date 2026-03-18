@@ -13,3 +13,4 @@ artprima_prometheus_metrics:
 
 api_doc:
     path: /api/docs
+    controller: api_platform.action.documentation
